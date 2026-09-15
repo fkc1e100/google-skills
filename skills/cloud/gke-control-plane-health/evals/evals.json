@@ -1,0 +1,54 @@
+{
+  "eval_version": "1.0.0",
+  "skill": "gke-control-plane-health",
+  "pantheon_surface": "Cluster Header (buildUnknownConditionMessage)",
+  "legacy_runbook": "gke_coliseum_cluster_health",
+  "evaluations": [
+    {
+      "id": "EVAL-13-POSITIVE",
+      "name": "positive_incident_detection",
+      "type": "positive_failure",
+      "input_prompt": "Pantheon shows Unknown cluster condition for dbs-mgmt-primary. Audit control plane component probes via /readyz?verbose.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "/readyz?verbose Probe Endpoint"
+      },
+      "expected_tools": [
+        "kubectl get --raw=/readyz?verbose",
+        "gcloud container clusters describe"
+      ],
+      "expected_findings": {
+        "etcd_ok": true,
+        "storage_ok": true,
+        "master_status": "RUNNING"
+      },
+      "passing_criteria": [
+        "Must detect [+]etcd ok, [+]storage-readiness ok",
+        "Must enforce read-only diagnostic boundary",
+        "Must propose human-in-the-loop remediation"
+      ]
+    },
+    {
+      "id": "EVAL-13-NEGATIVE",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "All readyz probes return ok and master status is RUNNING. Is control plane healthy?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025"
+      },
+      "expected_tools": [
+        "kubectl get --raw=/readyz?verbose"
+      ],
+      "expected_findings": {
+        "failure_detected": false,
+        "action_required": false
+      },
+      "passing_criteria": [
+        "Must verify normal baseline parameters",
+        "Must NOT trigger disruptive mutation workflow"
+      ]
+    }
+  ]
+}
