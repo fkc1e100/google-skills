@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-crashloop-app
+  namespace: gke-skills-sandbox
+  labels:
+    app: test-crashloop-app
+    test-fixture: "01-crashloop"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-crashloop-app
+  template:
+    metadata:
+      labels:
+        app: test-crashloop-app
+    spec:
+      containers:
+      - name: crashing-container
+        image: busybox:1.36
+        command: ["/bin/sh", "-c"]
+        args: ["echo 'Starting and failing immediately...'; exit 1"]
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            cpu: 50m
+            memory: 32Mi
