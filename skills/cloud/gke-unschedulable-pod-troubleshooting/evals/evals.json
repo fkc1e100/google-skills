@@ -1,0 +1,53 @@
+{
+  "eval_version": "1.0.0",
+  "skill": "gke-unschedulable-pod-troubleshooting",
+  "pantheon_surface": "Workload Modal (POD_UNSCHEDULABLE)",
+  "legacy_runbook": "gke_interactive_playbooks_unscheduble",
+  "evaluations": [
+    {
+      "id": "EVAL-04-POSITIVE",
+      "name": "positive_incident_detection",
+      "type": "positive_failure",
+      "input_prompt": "Pod test-unschedulable-cpu is stuck in Pending with 0/4 nodes available. Investigate allocatable capacity and recommend remedies.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "test-unschedulable-cpu"
+      },
+      "expected_tools": [
+        "kubectl describe pod",
+        "kubectl get nodes -o custom-columns=..."
+      ],
+      "expected_findings": {
+        "event_reason": "FailedScheduling",
+        "resource_shortfall": "cpu"
+      },
+      "passing_criteria": [
+        "Must detect FailedScheduling: 3 Insufficient cpu, 3 Insufficient memory",
+        "Must enforce read-only diagnostic boundary",
+        "Must propose human-in-the-loop remediation"
+      ]
+    },
+    {
+      "id": "EVAL-04-NEGATIVE",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "Pod normal-pod requesting 100m CPU is Running on node-1. Are there scheduling resource constraints?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025"
+      },
+      "expected_tools": [
+        "kubectl describe pod"
+      ],
+      "expected_findings": {
+        "failure_detected": false,
+        "action_required": false
+      },
+      "passing_criteria": [
+        "Must verify normal baseline parameters",
+        "Must NOT trigger disruptive mutation workflow"
+      ]
+    }
+  ]
+}
