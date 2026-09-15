@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-pdb-app
+  namespace: gke-skills-sandbox
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-pdb-app
+  template:
+    metadata:
+      labels:
+        app: test-pdb-app
+    spec:
+      containers:
+      - name: pause
+        image: gcr.io/google-containers/pause:3.2
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: test-strict-pdb
+  namespace: gke-skills-sandbox
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: test-pdb-app
