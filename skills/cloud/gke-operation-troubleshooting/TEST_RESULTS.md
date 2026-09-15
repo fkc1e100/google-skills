@@ -67,10 +67,36 @@ The following complete execution trace was captured during automated end-to-end 
 
 ```text
 $ gcloud container operations list --project=gca-gke-2025 --limit=5 --format='table(name,operationType,status,startTime,endTime,zone)'
-ERROR: (gcloud.container.operations.list) The account [insecure-cloudtop-shared-user@cloudtop-prod-us-east.iam.gserviceaccount.com] is available in the following universe domain(s): [googleapis.com], but it is not available in [apis-berlin-build0.goog] which is specified by the [core/universe_domain] property. Update your active account to an account from apis-berlin-build0.goog or update the [core/universe_domain] property to one of [googleapis.com].
+NAME                                                          TYPE              STATUS  START_TIME                      END_TIME                        LOCATION
+operation-1788740023695-f6ae1fac-6033-4815-92f0-2158d60b15cb  CREATE_CLUSTER    DONE    2026-09-07T00:13:43.695032099Z  2026-09-07T00:20:28.05431824Z   asia-southeast1-a
+operation-1788740043003-c6053677-3e90-4cd8-8c46-f0fdce32cf6c  CREATE_CLUSTER    DONE    2026-09-07T00:14:03.003026552Z  2026-09-07T00:20:31.608954487Z  asia-southeast1-a
+operation-1788740433770-af88ed6e-ea44-4bae-8b5a-c79951540f62  DELETE_NODE_POOL  DONE    2026-09-07T00:20:33.770755482Z  2026-09-07T00:23:10.358591577Z  asia-southeast1-a
+operation-1788740436444-3d37673a-9595-47f5-a926-49275769d030  DELETE_NODE_POOL  DONE    2026-09-07T00:20:36.444808615Z  2026-09-07T00:25:07.911230522Z  asia-southeast1-a
+operation-1788740600855-ff36ca37-b2f4-43b7-a9ad-ff52bf1570a2  CREATE_NODE_POOL  DONE    2026-09-07T00:23:20.855790559Z  2026-09-07T00:24:28.010068324Z  asia-southeast1-a
 
 $ gcloud container operations describe operation-1788740019919-91932dd4-ab38-43ef-b1ff-d0d1d1b0d385 --location=asia-southeast1 --project=gca-gke-2025
-ERROR: (gcloud.container.operations.describe) The account [insecure-cloudtop-shared-user@cloudtop-prod-us-east.iam.gserviceaccount.com] is available in the following universe domain(s): [googleapis.com], but it is not available in [apis-berlin-build0.goog] which is specified by the [core/universe_domain] property. Update your active account to an account from apis-berlin-build0.goog or update the [core/universe_domain] property to one of [googleapis.com].
+endTime: '2026-09-07T00:19:58.05476632Z'
+name: operation-1788740019919-91932dd4-ab38-43ef-b1ff-d0d1d1b0d385
+operationType: CREATE_CLUSTER
+progress:
+  metrics:
+  - intValue: '9'
+    name: CLUSTER_CONFIGURING
+  - intValue: '9'
+    name: CLUSTER_CONFIGURING_TOTAL
+  - intValue: '11'
+    name: CLUSTER_DEPLOYING
+  - intValue: '11'
+    name: CLUSTER_DEPLOYING_TOTAL
+  - intValue: '1'
+    name: CLUSTER_HEALTHCHECKING
+  - intValue: '2'
+    name: CLUSTER_HEALTHCHECKING_TOTAL
+selfLink: https://container.googleapis.com/v1/projects/764460891170/locations/asia-southeast1/operations/operation-1788740019919-91932dd4-ab38-43ef-b1ff-d0d1d1b0d385
+startTime: '2026-09-07T00:13:39.919126772Z'
+status: DONE
+targetLink: https://container.googleapis.com/v1/projects/764460891170/locations/asia-southeast1/clusters/krmapihost-dbs-cc-ga
+zone: asia-southeast1
 ```
 
 ### Automated Diagnostic Evaluation Trace
