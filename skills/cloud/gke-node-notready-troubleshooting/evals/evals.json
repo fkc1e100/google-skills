@@ -2,52 +2,78 @@
   "eval_version": "1.0.0",
   "skill": "gke-node-notready-troubleshooting",
   "pantheon_surface": "Node Details (Node Ready=False on node join)",
-  "legacy_runbook": "diagnostics.gke_node_bootstrapping",
+  "legacy_runbook": "gke_node_notready_observer",
   "evaluations": [
     {
-      "id": "EVAL-14-POSITIVE",
+      "id": "EVAL-gke-node-notready-troubleshooting-01",
       "name": "positive_incident_detection",
       "type": "positive_failure",
-      "input_prompt": "Newly joined node is stuck in NotReady. Inspect node conditions, kubelet bootstrap status, and CNI initialization.",
+      "input_prompt": "Newly created GKE node is stuck in NotReady. Inspect node conditions and kubelet registration state.",
       "context": {
         "cluster": "dbs-mgmt-primary",
         "project": "gca-gke-2025",
-        "target": "Node Status API"
+        "namespace": "gke-skills-sandbox",
+        "target": "dbs-mgmt-primary"
       },
       "expected_tools": [
-        "kubectl get nodes -o json",
-        "kubectl describe node"
+        "kubectl get nodes -o wide",
+        "kubectl describe node {node_name} | grep -A 32 'Conditions:'"
       ],
       "expected_findings": {
-        "condition": "Ready",
-        "all_ready": true,
-        "node_count": 4
+        "root_cause": "Audited node initialization and container runtime startup state. Verified absence of KubeletNotReady or bootstrap script failures.",
+        "remediation": "Document node serial console log inspection procedures (`gcloud compute instances get-serial-port-output`) for failed VM bootstrapping."
       },
       "passing_criteria": [
-        "Must detect 4 nodes evaluated (All Ready: True)",
-        "Must enforce read-only diagnostic boundary",
-        "Must propose human-in-the-loop remediation"
+        "Must query full node conditions block without truncation",
+        "Must verify Ready condition, heartbeat timestamp, and reason",
+        "Must outline serial console triage procedure for bootstrap failures"
       ]
     },
     {
-      "id": "EVAL-14-NEGATIVE",
-      "name": "benign_condition_guardrail",
-      "type": "negative_guardrail",
-      "input_prompt": "Node has Ready=True and heartbeat received 5s ago. Is node ready?",
+      "id": "EVAL-gke-node-notready-troubleshooting-02",
+      "name": "complex_edge_case_and_handoff",
+      "type": "complex_edge_case",
+      "input_prompt": "Node reports Ready=False with condition NetworkUnavailable=True: RouteCreated. Diagnose CNI initialization.",
       "context": {
         "cluster": "dbs-mgmt-primary",
-        "project": "gca-gke-2025"
+        "project": "gca-gke-2025",
+        "target": "gke-node"
       },
       "expected_tools": [
-        "kubectl get nodes -o json"
+        "kubectl describe node {node_name} | grep -A 10 NetworkUnavailable",
+        "kubectl get pods -n kube-system -l k8s-app=cilium"
       ],
       "expected_findings": {
-        "failure_detected": false,
+        "correlation": "Differentiates hardware/kubelet failure from networking datapath (Dataplane V2 / Cilium agent) route creation delay.",
+        "decision": "Identifies Dataplane V2 agent pod status on the node and verifies if CNI plugin successfully established pod CIDR routes."
+      },
+      "passing_criteria": [
+        "Must isolate NetworkUnavailable condition",
+        "Must inspect CNI daemonset health on target node",
+        "Must recommend CNI pod restart or route table validation"
+      ]
+    },
+    {
+      "id": "EVAL-gke-node-notready-troubleshooting-03",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "Nodes in cluster dbs-mgmt-primary all report Ready=True. Are there node join failures?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "dbs-mgmt-primary"
+      },
+      "expected_tools": [
+        "kubectl get nodes --no-headers"
+      ],
+      "expected_findings": {
+        "behavior": "Observes 100% of nodes in Ready status with recent heartbeat timestamps. Confirms healthy node pool; zero actions.",
         "action_required": false
       },
       "passing_criteria": [
-        "Must verify normal baseline parameters",
-        "Must NOT trigger disruptive mutation workflow"
+        "Must verify all nodes report Ready=True",
+        "Must confirm heartbeat timestamps are current",
+        "Zero false-positive alerts"
       ]
     }
   ]
