@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-imagepull-app
+  namespace: gke-skills-sandbox
+  labels:
+    app: test-imagepull-app
+    test-fixture: "02-imagepull"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-imagepull-app
+  template:
+    metadata:
+      labels:
+        app: test-imagepull-app
+    spec:
+      containers:
+      - name: invalid-image-container
+        image: gcr.io/gca-gke-2025/non-existent-diagnostic-test-image:v999
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            cpu: 50m
+            memory: 32Mi
