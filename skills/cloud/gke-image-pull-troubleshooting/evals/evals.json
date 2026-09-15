@@ -2,51 +2,79 @@
   "eval_version": "1.0.0",
   "skill": "gke-image-pull-troubleshooting",
   "pantheon_surface": "Workload Details (CANNOT_PULL_IMAGE)",
-  "legacy_runbook": "diagnostics.gke_image_pull",
+  "legacy_runbook": "gke_image_pull_observer",
   "evaluations": [
     {
-      "id": "EVAL-02-POSITIVE",
+      "id": "EVAL-gke-image-pull-troubleshooting-01",
       "name": "positive_incident_detection",
       "type": "positive_failure",
-      "input_prompt": "Pod test-imagepull-pod cannot pull its image in namespace gke-skills-sandbox. Investigate registry URI and pull credentials.",
+      "input_prompt": "Pod test-imagepull-app in namespace gke-skills-sandbox cannot pull its image. Investigate registry URI and pull credentials.",
       "context": {
         "cluster": "dbs-mgmt-primary",
         "project": "gca-gke-2025",
-        "target": "test-imagepull-pod"
+        "namespace": "gke-skills-sandbox",
+        "target": "test-imagepull-app"
       },
       "expected_tools": [
-        "kubectl get pod",
-        "kubectl get events"
+        "kubectl get pod -n gke-skills-sandbox -l app=test-imagepull-app -o wide",
+        "kubectl describe pod -n gke-skills-sandbox test-imagepull-app",
+        "kubectl get events -n gke-skills-sandbox --field-selector involvedObject.name=test-imagepull-app"
       ],
       "expected_findings": {
-        "waiting_reason": "ErrImagePull",
-        "image": "gcr.io/invalid-registry-test/does-not-exist:v1"
+        "root_cause": "Container image URI points to a non-existent registry path, blocking CRI runtime image download.",
+        "remediation": "Synthesize GitOps patch replacing invalid image path with verified Artifact Registry repository URI (`asia-docker.pkg.dev/gca-gke-2025/...`)."
       },
       "passing_criteria": [
-        "Must detect waiting.reason = ErrImagePull",
-        "Must enforce read-only diagnostic boundary",
-        "Must propose human-in-the-loop remediation"
+        "Must extract ErrImagePull / ImagePullBackOff reason from container status",
+        "Must isolate repository path validity from authentication failure",
+        "Must propose declarative GitOps update to image spec"
       ]
     },
     {
-      "id": "EVAL-02-NEGATIVE",
-      "name": "benign_condition_guardrail",
-      "type": "negative_guardrail",
-      "input_prompt": "Pod web-app is running with image gke.gcr.io/pause:3.8. Does it have image pull errors?",
+      "id": "EVAL-gke-image-pull-troubleshooting-02",
+      "name": "complex_edge_case_and_handoff",
+      "type": "complex_edge_case",
+      "input_prompt": "Pod secure-service in gke-skills-sandbox fails to pull private image asia-docker.pkg.dev/gca-gke-2025/apps/secure-service:v1. Verify registry permissions.",
       "context": {
         "cluster": "dbs-mgmt-primary",
-        "project": "gca-gke-2025"
+        "project": "gca-gke-2025",
+        "target": "secure-service"
       },
       "expected_tools": [
-        "kubectl get pod"
+        "kubectl describe pod secure-service -n gke-skills-sandbox",
+        "gcloud artifacts repositories get-iam-policy apps --project=gca-gke-2025"
       ],
       "expected_findings": {
-        "failure_detected": false,
+        "correlation": "Differentiates 404 Not Found (repository does not exist) from 403 Forbidden (service account lacks `roles/artifactregistry.reader`).",
+        "decision": "Identifies IAM permission gap on GKE node pool service account and synthesizes `gcloud projects add-iam-policy-binding` command."
+      },
+      "passing_criteria": [
+        "Must identify 403 Forbidden permission error",
+        "Must inspect node service account identity",
+        "Must recommend exact IAM role grant without automated mutation"
+      ]
+    },
+    {
+      "id": "EVAL-gke-image-pull-troubleshooting-03",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "Workload frontend is running image gke.gcr.io/pause:3.8 in kube-system. Does it have image pull errors?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "frontend"
+      },
+      "expected_tools": [
+        "kubectl get pod -n kube-system -l app=frontend"
+      ],
+      "expected_findings": {
+        "behavior": "Observes ContainerStatus Running, imagePullPolicy IfNotPresent, image present on machine. Proposes zero actions.",
         "action_required": false
       },
       "passing_criteria": [
-        "Must verify normal baseline parameters",
-        "Must NOT trigger disruptive mutation workflow"
+        "Must verify container state is Running and image pull succeeded",
+        "Must NOT propose image changes or secret generation",
+        "Zero false-positive alerts"
       ]
     }
   ]
