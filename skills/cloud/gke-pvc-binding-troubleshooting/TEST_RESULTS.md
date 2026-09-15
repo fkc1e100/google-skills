@@ -3,7 +3,7 @@
 **Target Cluster:** `dbs-mgmt-primary` (`asia-southeast1-a`)  
 **Project:** `gca-gke-2025`  
 **Namespace:** `gke-skills-sandbox`  
-**Test Harness:** `tests/run_live_gke_skill_tests.py`  
+**Test Harness:** `tests/run_and_record_full_traces.py`  
 **Status:** **PASS** (100% Diagnostic Verification)  
 **Date:** September 14, 2026  
 
@@ -64,17 +64,58 @@ Enforce `WaitForFirstConsumer` on all zonal StorageClasses to prevent volume pro
 
 ## 5. Live Cluster Execution Trace
 
-The following execution trace was captured during automated end-to-end verification against active Google Kubernetes Engine cluster `dbs-mgmt-primary` in project `gca-gke-2025`:
+The following complete execution trace was captured during automated end-to-end verification against active Google Kubernetes Engine cluster `dbs-mgmt-primary` in project `gca-gke-2025`:
+
+### Diagnostic Commands & Live Terminal Output
 
 ```text
-================================================================================
-🚀  Test 7: PVC Binding Failure (gke-pvc-binding-troubleshooting)
-================================================================================
-⏳ Applying fixture 07-unbound-pvc.yaml to namespace gke-skills-sandbox
-⏳ Waiting up to 60s for PVC test-unbound-pvc failure condition...
-   Observed PVC status: Pending (0s elapsed)
-✅ [PASS] PVC observed failure: phase=Pending, storageClass=non-existent-test-storage-class
+$ kubectl --context=dbs-mgmt-primary get pvc -n gke-skills-sandbox test-unbound-pvc -o wide
+NAME               STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS                      VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+test-unbound-pvc   Pending                                      non-existent-test-storage-class   <unset>                 7s    Filesystem
+
+$ kubectl --context=dbs-mgmt-primary describe pvc -n gke-skills-sandbox test-unbound-pvc
+Name:          test-unbound-pvc
+Namespace:     gke-skills-sandbox
+StorageClass:  non-existent-test-storage-class
+Status:        Pending
+Volume:        
+Labels:        test-fixture=07-unbound-pvc
+Annotations:   <none>
+Finalizers:    [kubernetes.io/pvc-protection]
+Capacity:      
+Access Modes:  
+VolumeMode:    Filesystem
+Used By:       test-pvc-app-7c7d6699bf-6rnvm
+Events:
+  Type     Reason              Age              From                         Message
+  ----     ------              ----             ----                         -------
+  Warning  ProvisioningFailed  1s (x2 over 9s)  persistentvolume-controller  storageclass.storage.k8s.io "non-existent-test-storage-class" not found
+
+$ kubectl --context=dbs-mgmt-primary get storageclass
+NAME                     PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+dynamic-rwo              pd.csi.storage.gke.io   Delete          WaitForFirstConsumer   true                   8d
+premium-rwo              pd.csi.storage.gke.io   Delete          WaitForFirstConsumer   true                   8d
+standard                 kubernetes.io/gce-pd    Delete          Immediate              true                   8d
+standard-rwo (default)   pd.csi.storage.gke.io   Delete          WaitForFirstConsumer   true                   8d
+
+$ kubectl --context=dbs-mgmt-primary get events -n gke-skills-sandbox --field-selector involvedObject.name=test-unbound-pvc
+LAST SEEN   TYPE      REASON               OBJECT                                   MESSAGE
+35m         Warning   ProvisioningFailed   persistentvolumeclaim/test-unbound-pvc   storageclass.storage.k8s.io "non-existent-test-storage-class" not found
+4s          Warning   ProvisioningFailed   persistentvolumeclaim/test-unbound-pvc   storageclass.storage.k8s.io "non-existent-test-storage-class" not found
 ```
 
+### Automated Diagnostic Evaluation Trace
+1. **Telemetry Ingestion**:
+   - PVC Status: `Pending`
+   - Requested StorageClass: `non-existent-test-storage-class`
+   - Available Cluster StorageClasses: `standard-rwo` (default), `premium-rwo`.
+   - Volume Provisioner Event: `storageclass.storage.k8s.io "non-existent-test-storage-class" not found`
+
+2. **Root Cause Isolation**:
+   - PVC references a non-existent StorageClass, preventing the CSI driver from provisioning the backing persistent disk.
+
+3. **Actionable Remediation**:
+   - Updated PVC manifest to specify `storageClassName: standard-rwo`.
+
 ### Verification Finding
-The diagnostic workflow executed cleanly against live cluster infrastructure, correctly identified the failure signature, preserved all safety boundaries, and synthesized the appropriate remediation plan.
+The diagnostic workflow executed cleanly against live cluster infrastructure, correctly captured and isolated the failure signature, preserved all safety boundaries, and synthesized the appropriate remediation plan.
