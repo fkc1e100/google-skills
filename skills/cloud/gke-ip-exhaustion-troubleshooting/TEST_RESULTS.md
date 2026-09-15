@@ -5,7 +5,7 @@
 **Namespace:** `gke-skills-sandbox`  
 **Test Harness:** `tests/run_and_record_full_traces.py`  
 **Status:** **PASS** (100% Diagnostic Verification)  
-**Date:** September 14, 2026  
+**Date:** September 15, 2026  
 
 ---
 
@@ -90,9 +90,12 @@ $ gcloud compute networks subnets describe dbs-primary-subnet-sg --region=asia-s
 NAME                   IP_CIDR_RANGE  RANGE_NAME            SECONDARY_IP_RANGES_IP_CIDR_RANGE
 dbs-primary-subnet-sg  10.100.0.0/20  ['pods', 'services']  ['10.101.0.0/16', '10.102.0.0/20']
 
-$ kubectl --context=dbs-mgmt-primary get nodes -o custom-columns=NAME:.metadata.name,PODS:.status.allocatable.pods,INTERNAL-IP:.status.addresses[?(@.type=="InternalIP")].address,POD-CIDR:.spec.podCIDR
-/bin/sh: -c: line 1: syntax error near unexpected token `('
-/bin/sh: -c: line 1: `kubectl --context=dbs-mgmt-primary get nodes -o custom-columns=NAME:.metadata.name,PODS:.status.allocatable.pods,INTERNAL-IP:.status.addresses[?(@.type=="InternalIP")].address,POD-CIDR:.spec.podCIDR'
+$ kubectl --context=dbs-mgmt-primary get nodes -o custom-columns=NAME:.metadata.name,INTERNAL-IP:.status.addresses[0].address,POD-CIDR:.spec.podCIDR
+NAME                                              INTERNAL-IP   POD-CIDR
+gke-dbs-mgmt-primary-gpu-pool-98cd300e-pd5g       10.100.0.17   10.101.2.0/24
+gke-dbs-mgmt-primary-primary-pool-d994c2a3-2o5t   10.100.0.13   10.101.1.0/24
+gke-dbs-mgmt-primary-primary-pool-d994c2a3-irgf   10.100.0.12   10.101.4.0/24
+gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi   10.100.0.14   10.101.0.0/24
 ```
 
 ### Automated Diagnostic Evaluation Trace
