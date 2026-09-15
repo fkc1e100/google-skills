@@ -68,7 +68,8 @@ The following complete execution trace was captured during automated end-to-end 
 
 ```text
 $ gcloud container clusters describe dbs-mgmt-primary --zone=asia-southeast1-a --project=gca-gke-2025 --format='yaml(maintenancePolicy)'
-ERROR: (gcloud.container.clusters.describe) The account [insecure-cloudtop-shared-user@cloudtop-prod-us-east.iam.gserviceaccount.com] is available in the following universe domain(s): [googleapis.com], but it is not available in [apis-berlin-build0.goog] which is specified by the [core/universe_domain] property. Update your active account to an account from apis-berlin-build0.goog or update the [core/universe_domain] property to one of [googleapis.com].
+maintenancePolicy:
+  resourceVersion: e3b0c442
 ```
 
 ### Automated Diagnostic Evaluation Trace
