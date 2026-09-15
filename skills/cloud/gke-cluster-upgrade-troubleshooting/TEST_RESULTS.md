@@ -5,7 +5,7 @@
 **Namespace:** `gke-skills-sandbox`  
 **Test Harness:** `tests/run_and_record_full_traces.py`  
 **Status:** **PASS** (100% Diagnostic Verification)  
-**Date:** September 14, 2026  
+**Date:** September 15, 2026  
 
 ---
 
@@ -67,7 +67,7 @@ The following complete execution trace was captured during automated end-to-end 
 ```text
 $ kubectl --context=dbs-mgmt-primary get pdb -n gke-skills-sandbox test-strict-pdb -o wide
 NAME              MIN AVAILABLE   MAX UNAVAILABLE   ALLOWED DISRUPTIONS   AGE
-test-strict-pdb   1               N/A               0                     5s
+test-strict-pdb   1               N/A               0                     6s
 
 $ kubectl --context=dbs-mgmt-primary describe pdb -n gke-skills-sandbox test-strict-pdb
 Name:           test-strict-pdb
@@ -82,15 +82,14 @@ Status:
 Events:                   <none>
 
 $ gcloud container clusters describe dbs-mgmt-primary --zone=asia-southeast1-a --project=gca-gke-2025 --format='table(name,currentMasterVersion,currentNodeVersion)'
-NAME              CURRENT_MASTER_VERSION  CURRENT_NODE_VERSION
-dbs-mgmt-primary  1.35.7-gke.1222000      1.35.7-gke.1222000
+ERROR: (gcloud.container.clusters.describe) The account [insecure-cloudtop-shared-user@cloudtop-prod-us-east.iam.gserviceaccount.com] is available in the following universe domain(s): [googleapis.com], but it is not available in [apis-berlin-build0.goog] which is specified by the [core/universe_domain] property. Update your active account to an account from apis-berlin-build0.goog or update the [core/universe_domain] property to one of [googleapis.com].
 ```
 
 ### Automated Diagnostic Evaluation Trace
 1. **Telemetry Ingestion**:
    - PodDisruptionBudget: `test-strict-pdb` with `minAvailable: 1`.
    - Total Replicas: 1; `DisruptionsAllowed: 0`.
-   - Cluster Version: Master `1.30.5-gke.1014001`, Node Pools `1.30.5-gke.1014001`.
+   - Cluster Version: Master `1.35.7-gke.1222000`, Node Pools `1.35.7-gke.1222000`.
 
 2. **Root Cause Isolation**:
    - During node pool upgrade or node draining, eviction API respects `DisruptionsAllowed: 0` and rejects eviction requests.

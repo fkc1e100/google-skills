@@ -5,7 +5,7 @@
 **Namespace:** `gke-skills-sandbox`  
 **Test Harness:** `tests/run_and_record_full_traces.py`  
 **Status:** **PASS** (100% Diagnostic Verification)  
-**Date:** September 14, 2026  
+**Date:** September 15, 2026  
 
 ---
 
@@ -68,27 +68,50 @@ The following complete execution trace was captured during automated end-to-end 
 ```text
 $ kubectl --context=dbs-mgmt-primary get nodes -o wide
 NAME                                              STATUS   ROLES    AGE     VERSION               INTERNAL-IP   EXTERNAL-IP      OS-IMAGE                             KERNEL-VERSION   CONTAINER-RUNTIME
-gke-dbs-mgmt-primary-gpu-pool-98cd300e-pd5g       Ready    <none>   36m     v1.35.7-gke.1222000   10.100.0.17   136.85.76.124    Container-Optimized OS from Google   6.12.94+         containerd://2.1.9
-gke-dbs-mgmt-primary-primary-pool-d994c2a3-2o5t   Ready    <none>   2d17h   v1.35.7-gke.1222000   10.100.0.13   34.21.226.52     Container-Optimized OS from Google   6.12.94+         containerd://2.1.9
+gke-dbs-mgmt-primary-gpu-pool-98cd300e-pd5g       Ready    <none>   56m     v1.35.7-gke.1222000   10.100.0.17   136.85.76.124    Container-Optimized OS from Google   6.12.94+         containerd://2.1.9
+gke-dbs-mgmt-primary-primary-pool-d994c2a3-2o5t   Ready    <none>   2d18h   v1.35.7-gke.1222000   10.100.0.13   34.21.226.52     Container-Optimized OS from Google   6.12.94+         containerd://2.1.9
 gke-dbs-mgmt-primary-primary-pool-d994c2a3-irgf   Ready    <none>   2d18h   v1.35.7-gke.1222000   10.100.0.12   136.85.109.230   Container-Optimized OS from Google   6.12.94+         containerd://2.1.9
-gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi   Ready    <none>   2d17h   v1.35.7-gke.1222000   10.100.0.14   34.87.139.148    Container-Optimized OS from Google   6.12.94+         containerd://2.1.9
+gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi   Ready    <none>   2d18h   v1.35.7-gke.1222000   10.100.0.14   34.87.139.148    Container-Optimized OS from Google   6.12.94+         containerd://2.1.9
 
-$ kubectl --context=dbs-mgmt-primary describe node gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi | grep -A 10 'Conditions:'
+$ kubectl --context=dbs-mgmt-primary describe node gke-dbs-mgmt-primary-primary-pool-d994c2a3-2o5t | grep -A 32 'Conditions:'
 Conditions:
   Type                                              Status  LastHeartbeatTime                 LastTransitionTime                Reason                                                       Message
   ----                                              ------  -----------------                 ------------------                ------                                                       -------
-  FrequentKubeletRestart                            False   Tue, 15 Sep 2026 00:01:30 -0400   Sat, 12 Sep 2026 06:13:47 -0400   NoFrequentKubeletRestart                                     kubelet is functioning properly
-  FrequentDockerRestart                             False   Tue, 15 Sep 2026 00:01:30 -0400   Sat, 12 Sep 2026 06:13:47 -0400   NoFrequentDockerRestart                                      docker is functioning properly
-  KernelDeadlock                                    False   Tue, 15 Sep 2026 00:01:30 -0400   Sat, 12 Sep 2026 06:13:47 -0400   KernelHasNoDeadlock                                          kernel has no deadlock
-  SysctlChanged                                     True    Tue, 15 Sep 2026 00:01:30 -0400   Sat, 12 Sep 2026 06:13:48 -0400   NodeSysctlChange                                             {"unmanaged": {"kernel.cad_pid": "1"}}
-  StoragePressureRootFileSystem                     False   Tue, 15 Sep 2026 00:01:30 -0400   Sat, 12 Sep 2026 06:13:47 -0400   StoragePressureRootFileSystemNotDetected                     Root filesystem has no storage pressure
-  CperHardwareErrorFatal                            False   Tue, 15 Sep 2026 00:01:30 -0400   Sat, 12 Sep 2026 06:13:47 -0400   CperHardwareHasNoFatalError                                  UEFI CPER has no fatal error
-  ResourceExhausted                                 False   Tue, 15 Sep 2026 00:01:30 -0400   Sat, 12 Sep 2026 06:13:47 -0400   ResourcesOK                                                  System resources are within normal range.
-  XfsShutdown                                       False   Tue, 15 Sep 2026 00:01:30 -0400   Sat, 12 Sep 2026 06:13:47 -0400   XfsHasNotShutDown                                            XFS has not shutdown
+  NetworkUnavailable                                False   Sat, 12 Sep 2026 06:08:49 -0400   Sat, 12 Sep 2026 06:08:49 -0400   RouteCreated                                                 NodeController create implicit route
+  FrequentKubeletRestart                            False   Tue, 15 Sep 2026 00:21:27 -0400   Sat, 12 Sep 2026 06:08:47 -0400   NoFrequentKubeletRestart                                     kubelet is functioning properly
+  DeprecatedOtherContainerdFeatures                 False   Tue, 15 Sep 2026 00:21:27 -0400   Sat, 12 Sep 2026 06:08:47 -0400   DeprecatedOtherContainerdFeaturesNotDetected                 No deprecation risk: did not find any deprecations other than 3 configs fields (auths/configs/mirrors), pulling schema v1 images and using v1alpha2 CRI.
+  DeprecatedMirrorsFieldInContainerdConfiguration   False   Tue, 15 Sep 2026 00:21:27 -0400   Sat, 12 Sep 2026 06:08:47 -0400   DeprecatedMirrorsFieldInContainerdConfigurationNotDetected   No deprecation risk: did not find any deprecated 'mirrors' field in containerd's config
+  FrequentDockerRestart                             False   Tue, 15 Sep 2026 00:21:27 -0400   Sat, 12 Sep 2026 06:08:47 -0400   NoFrequentDockerRestart                                      docker is functioning properly
+  FrequentContainerdRestart                         False   Tue, 15 Sep 2026 00:21:27 -0400   Sat, 12 Sep 2026 06:08:47 -0400   NoFrequentContainerdRestart                                  containerd is functioning properly
+  ReadOnlyRootFileSystem                            False   Tue, 15 Sep 2026 00:21:27 -0400   Sat, 12 Sep 2026 06:08:47 -0400   ReadOnlyRootFileSystemNotDetected                            Root filesystem is not read only
+  UnsupportedEBPFPrograms                           False   Tue, 15 Sep 2026 00:21:27 -0400   Sat, 12 Sep 2026 06:08:47 -0400   UnsupportedEBPFProgramsNotDetected                           No unsupported EBPF programs detected
+  SysctlChanged                                     True    Tue, 15 Sep 2026 00:21:27 -0400   Sat, 12 Sep 2026 06:08:48 -0400   NodeSysctlChange                                             {"unmanaged": {"kernel.cad_pid": "1"}}
+  CperHardwareErrorFatal                            False   Tue, 15 Sep 2026 00:21:27 -0400   Sat, 12 Sep 2026 06:08:47 -0400   CperHardwareHasNoFatalError                                  UEFI CPER has no fatal error
+  KernelDeadlock                                    False   Tue, 15 Sep 2026 00:21:27 -0400   Sat, 12 Sep 2026 06:08:47 -0400   KernelHasNoDeadlock                                          kernel has no deadlock
+  DeprecatedUsingV1Alpha2Cri                        False   Tue, 15 Sep 2026 00:21:27 -0400   Sat, 12 Sep 2026 06:08:47 -0400   DeprecatedUsingV1Alpha2CriNotDetected                        No deprecation risk: did not use v1alpha2 CRI
+  Swap                                              False   Tue, 15 Sep 2026 00:21:27 -0400   Sat, 12 Sep 2026 06:08:47 -0400   SwapNotDetected                                              Swap is not active
+  DeprecatedAuthsFieldInContainerdConfiguration     False   Tue, 15 Sep 2026 00:21:27 -0400   Sat, 12 Sep 2026 06:08:47 -0400   DeprecatedAuthsFieldInContainerdConfigurationNotDetected     No deprecation risk: did not find any deprecated 'auths' field in containerd's config
+  CorruptDockerOverlay2                             False   Tue, 15 Sep 2026 00:21:27 -0400   Sat, 12 Sep 2026 06:08:48 -0400   NoCorruptDockerOverlay2                                      docker overlay2 is functioning properly
+  DeprecatedPullingSchemaV1Image                    False   Tue, 15 Sep 2026 00:21:27 -0400   Sat, 12 Sep 2026 06:08:47 -0400   DeprecatedPullingSchemaV1ImageDetected                       No deprecation risk: did not pull any schema v1 images
+  KubeletConfigChanged                              False   Tue, 15 Sep 2026 00:21:27 -0400   Sat, 12 Sep 2026 06:08:47 -0400   NoKubeletConfigChangeDetected                                No changes detected to the kubelet configuration file.
+  DPv2MigrationUnsupportedCNI                       False   Tue, 15 Sep 2026 00:21:27 -0400   Sat, 12 Sep 2026 06:08:47 -0400   DPv2MigrationUnsupportedCNINotDetected                       No unsupported CNI detected for DPv2 migration
+  XfsShutdown                                       False   Tue, 15 Sep 2026 00:21:27 -0400   Sat, 12 Sep 2026 06:08:47 -0400   XfsHasNotShutDown                                            XFS has not shutdown
+  StoragePressureRootFileSystem                     False   Tue, 15 Sep 2026 00:21:27 -0400   Sat, 12 Sep 2026 06:08:47 -0400   StoragePressureRootFileSystemNotDetected                     Root filesystem has no storage pressure
+  ResourceExhausted                                 False   Tue, 15 Sep 2026 00:21:27 -0400   Sat, 12 Sep 2026 06:08:47 -0400   ResourcesOK                                                  System resources are within normal range.
+  FrequentUnregisterNetDevice                       False   Tue, 15 Sep 2026 00:21:27 -0400   Sat, 12 Sep 2026 06:08:47 -0400   NoFrequentUnregisterNetDevice                                node is functioning properly
+  DeprecatedConfigsFieldInContainerdConfiguration   False   Tue, 15 Sep 2026 00:21:27 -0400   Sat, 12 Sep 2026 06:08:47 -0400   DeprecatedConfigsFieldInContainerdConfigurationNotDetected   No deprecation risk: did not find any deprecated 'configs' field in containerd's config
+  MemoryPressure                                    False   Tue, 15 Sep 2026 00:24:19 -0400   Sat, 12 Sep 2026 06:08:47 -0400   KubeletHasSufficientMemory                                   kubelet has sufficient memory available
+  DiskPressure                                      False   Tue, 15 Sep 2026 00:24:19 -0400   Sat, 12 Sep 2026 06:08:47 -0400   KubeletHasNoDiskPressure                                     kubelet has no disk pressure
+  PIDPressure                                       False   Tue, 15 Sep 2026 00:24:19 -0400   Sat, 12 Sep 2026 06:08:47 -0400   KubeletHasSufficientPID                                      kubelet has sufficient PID available
+  Ready                                             True    Tue, 15 Sep 2026 00:24:19 -0400   Sat, 12 Sep 2026 06:08:51 -0400   KubeletReady                                                 kubelet is posting ready status
+Addresses:
+  InternalIP:  10.100.0.13
+  ExternalIP:  34.21.226.52
 ```
 
 ### Automated Diagnostic Evaluation Trace
 1. **Telemetry Ingestion**:
+   - Target Node: `gke-dbs-mgmt-primary-primary-pool-d994c2a3-2o5t`
    - Node Status: `Ready=True`.
    - Node Conditions: `MemoryPressure=False`, `DiskPressure=False`, `PIDPressure=False`, `NetworkUnavailable=False`.
    - Kubelet Version: Matching GKE control plane version.

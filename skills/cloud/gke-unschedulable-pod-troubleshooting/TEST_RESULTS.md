@@ -5,7 +5,7 @@
 **Namespace:** `gke-skills-sandbox`  
 **Test Harness:** `tests/run_and_record_full_traces.py`  
 **Status:** **PASS** (100% Diagnostic Verification)  
-**Date:** September 14, 2026  
+**Date:** September 15, 2026  
 
 ---
 
@@ -71,17 +71,17 @@ The following complete execution trace was captured during automated end-to-end 
 ```text
 $ kubectl --context=dbs-mgmt-primary get pods -n gke-skills-sandbox -l app=test-unschedulable-app -o wide
 NAME                                     READY   STATUS    RESTARTS   AGE   IP       NODE     NOMINATED NODE   READINESS GATES
-test-unschedulable-app-d8b6554d7-cd8m5   0/1     Pending   0          32s   <none>   <none>   <none>           <none>
+test-unschedulable-app-d8b6554d7-glqqv   0/1     Pending   0          7s    <none>   <none>   <none>           <none>
 
-$ kubectl --context=dbs-mgmt-primary describe pod -n gke-skills-sandbox test-unschedulable-app
-Name:             test-unschedulable-app-d8b6554d7-cd8m5
+$ kubectl --context=dbs-mgmt-primary describe pod -n gke-skills-sandbox test-unschedulable-app-d8b6554d7-glqqv
+Name:             test-unschedulable-app-d8b6554d7-glqqv
 Namespace:        gke-skills-sandbox
 Priority:         0
 Service Account:  default
 Node:             <none>
 Labels:           app=test-unschedulable-app
                   pod-template-hash=d8b6554d7
-Annotations:      cloud.google.com/cluster_autoscaler_unhelpable_since: 2026-09-15T04:02:26+0000
+Annotations:      cloud.google.com/cluster_autoscaler_unhelpable_since: 2026-09-15T04:24:18+0000
                   cloud.google.com/cluster_autoscaler_unhelpable_until: Inf
 Status:           Pending
 IP:               
@@ -100,12 +100,12 @@ Containers:
       memory:     500Gi
     Environment:  <none>
     Mounts:
-      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-sz5f6 (ro)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-gm7sx (ro)
 Conditions:
   Type           Status
   PodScheduled   False 
 Volumes:
-  kube-api-access-sz5f6:
+  kube-api-access-gm7sx:
     Type:                    Projected (a volume that contains injected data from multiple sources)
     TokenExpirationSeconds:  3607
     ConfigMapName:           kube-root-ca.crt
@@ -116,20 +116,15 @@ Node-Selectors:              <none>
 Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
                              node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
 Events:
-  Type     Reason             Age   From                Message
-  ----     ------             ----  ----                -------
-  Warning  FailedScheduling   35s   default-scheduler   0/4 nodes are available: 1 node(s) had untolerated taint(s), 3 Insufficient cpu, 3 Insufficient memory. no new claims to deallocate, preemption: 0/4 nodes are available: 4 Preemption is not helpful for scheduling.
-  Normal   NotTriggerScaleUp  35s   cluster-autoscaler  Pod didn't trigger scale-up: 1 node(s) had untolerated taint(s)
+  Type     Reason             Age              From                Message
+  ----     ------             ----             ----                -------
+  Normal   NotTriggerScaleUp  9s               cluster-autoscaler  Pod didn't trigger scale-up: 1 node(s) had untolerated taint(s)
+  Warning  FailedScheduling   1s (x2 over 9s)  default-scheduler   0/4 nodes are available: 1 node(s) had untolerated taint(s), 3 Insufficient cpu, 3 Insufficient memory. no new claims to deallocate, preemption: 0/4 nodes are available: 4 Preemption is not helpful for scheduling.
 
-$ kubectl --context=dbs-mgmt-primary get events -n gke-skills-sandbox --field-selector reason=FailedScheduling
-LAST SEEN   TYPE      REASON             OBJECT                                                MESSAGE
-33m         Warning   FailedScheduling   pod/test-nodeselector-mismatch-app-6cdd88c66b-wjd8c   0/3 nodes are available: 3 node(s) didn't match Pod's node affinity/selector. no new claims to deallocate, preemption: 0/3 nodes are available: 3 Preemption is not helpful for scheduling.
-33m         Warning   FailedScheduling   pod/test-pvc-app-7c7d6699bf-8hx8q                     0/3 nodes are available: pod has unbound immediate PersistentVolumeClaims. not found
-33m         Warning   FailedScheduling   pod/test-pvc-app-7c7d6699bf-8hx8q                     0/3 nodes are available: persistentvolumeclaim "test-unbound-pvc" is being deleted. not found
-33m         Warning   FailedScheduling   pod/test-pvc-notfound-app                             0/3 nodes are available: persistentvolumeclaim "ghost-pvc-claim-missing" not found. not found
-33m         Warning   FailedScheduling   pod/test-taint-mismatch-app-7f9598d694-5c46j          0/3 nodes are available: 3 node(s) didn't match Pod's node affinity/selector. no new claims to deallocate, preemption: 0/3 nodes are available: 3 Preemption is not helpful for scheduling.
-33m         Warning   FailedScheduling   pod/test-unschedulable-app-d8b6554d7-98p7f            0/3 nodes are available: 3 Insufficient cpu, 3 Insufficient memory. no new claims to deallocate, preemption: 0/3 nodes are available: 3 Preemption is not helpful for scheduling.
-36s         Warning   FailedScheduling   pod/test-unschedulable-app-d8b6554d7-cd8m5            0/4 nodes are available: 1 node(s) had untolerated taint(s), 3 Insufficient cpu, 3 Insufficient memory. no new claims to deallocate, preemption: 0/4 nodes are available: 4 Preemption is not helpful for scheduling.
+$ kubectl --context=dbs-mgmt-primary get events -n gke-skills-sandbox --field-selector involvedObject.name=test-unschedulable-app-d8b6554d7-glqqv
+LAST SEEN   TYPE      REASON              OBJECT                                       MESSAGE
+2s          Warning   FailedScheduling    pod/test-unschedulable-app-d8b6554d7-glqqv   0/4 nodes are available: 1 node(s) had untolerated taint(s), 3 Insufficient cpu, 3 Insufficient memory. no new claims to deallocate, preemption: 0/4 nodes are available: 4 Preemption is not helpful for scheduling.
+10s         Normal    NotTriggerScaleUp   pod/test-unschedulable-app-d8b6554d7-glqqv   Pod didn't trigger scale-up: 1 node(s) had untolerated taint(s)
 
 $ kubectl --context=dbs-mgmt-primary describe nodes | grep -A 8 'Allocated resources:'
 Allocated resources:
@@ -176,17 +171,17 @@ Allocated resources:
 ### Automated Diagnostic Evaluation Trace
 1. **Telemetry Ingestion**:
    - Pod Status: `Pending`
-   - Scheduler Event: `0/4 nodes available: 4 Insufficient cpu`
-   - Pod Resource Request: `cpu: 250`
+   - Scheduler Event: `0/4 nodes available: 1 node(s) had untolerated taint(s), 3 Insufficient cpu, 3 Insufficient memory`
+   - Pod Resource Request: `cpu: 500`, `memory: 500Gi`
    - Active Node Allocatable CPU: ~1.9 cores per e2-standard-2 node.
 
 2. **Root Cause Isolation**:
-   - The pod requested 250 cores of CPU, which exceeds the total physical capacity of any node in the cluster.
-   - Verified that cluster autoscaler cannot satisfy request because requested CPU exceeds largest node pool instance type.
+   - The pod requested 500 cores of CPU and 500Gi memory, which exceeds physical capacity of any node in cluster `dbs-mgmt-primary`.
+   - Verified that cluster autoscaler cannot satisfy request because requested capacity exceeds node pool machine types.
 
 3. **Actionable Remediation**:
-   - Identified impossible resource request in deployment manifest.
-   - Synthesized realistic CPU request (250m) and verified immediate successful scheduling.
+   - Identified unfulfillable resource request in deployment manifest.
+   - Synthesized realistic CPU/memory requests (250m / 256Mi) and verified immediate successful scheduling.
 
 ### Verification Finding
 The diagnostic workflow executed cleanly against live cluster infrastructure, correctly captured and isolated the failure signature, preserved all safety boundaries, and synthesized the appropriate remediation plan.

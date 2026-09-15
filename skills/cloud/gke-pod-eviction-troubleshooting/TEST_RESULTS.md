@@ -5,7 +5,7 @@
 **Namespace:** `gke-skills-sandbox`  
 **Test Harness:** `tests/run_and_record_full_traces.py`  
 **Status:** **PASS** (100% Diagnostic Verification)  
-**Date:** September 14, 2026  
+**Date:** September 15, 2026  
 
 ---
 
@@ -73,8 +73,8 @@ The following complete execution trace was captured during automated end-to-end 
 
 ```text
 $ kubectl --context=dbs-mgmt-primary get pods -n gke-skills-sandbox -l app=test-pod-eviction-app -o wide
-NAME                    READY   STATUS      RESTARTS   AGE   IP            NODE                                              NOMINATED NODE   READINESS GATES
-test-pod-eviction-app   0/1     Completed   0          23s   10.101.0.48   gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi   <none>           <none>
+NAME                    READY   STATUS                   RESTARTS   AGE   IP            NODE                                              NOMINATED NODE   READINESS GATES
+test-pod-eviction-app   0/1     ContainerStatusUnknown   1          20s   10.101.0.58   gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi   <none>           <none>
 
 $ kubectl --context=dbs-mgmt-primary describe pod -n gke-skills-sandbox test-pod-eviction-app
 Name:             test-pod-eviction-app
@@ -82,34 +82,43 @@ Namespace:        gke-skills-sandbox
 Priority:         0
 Service Account:  default
 Node:             gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi/10.100.0.14
-Start Time:       Tue, 15 Sep 2026 00:06:26 -0400
+Start Time:       Tue, 15 Sep 2026 00:26:36 -0400
 Labels:           app=test-pod-eviction-app
                   topology.kubernetes.io/region=asia-southeast1
                   topology.kubernetes.io/zone=asia-southeast1-a
 Annotations:      <none>
-Status:           Succeeded
-IP:               10.101.0.48
+Status:           Failed
+Reason:           Evicted
+Message:          Usage of EmptyDir volume "scratch-volume" exceeds the limit "10Mi". 
+IP:               10.101.0.58
 IPs:
-  IP:  10.101.0.48
+  IP:  10.101.0.58
 Containers:
   disk-hog:
-    Container ID:  containerd://cb75bc612b28f34643e78457c96972f76e48d608ea915c9e8fef734368a50de0
+    Container ID:  
     Image:         busybox:1.36
-    Image ID:      docker.io/library/busybox@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662
+    Image ID:      
     Port:          <none>
     Host Port:     <none>
     Command:
       /bin/sh
       -c
     Args:
-      dd if=/dev/zero of=/tmp/bloatfile bs=1M count=15; sleep 20
+      dd if=/dev/zero of=/tmp/bloatfile bs=1M count=25 && sleep 3600
     State:          Terminated
-      Reason:       Completed
-      Exit Code:    0
-      Started:      Tue, 15 Sep 2026 00:06:27 -0400
-      Finished:     Tue, 15 Sep 2026 00:06:47 -0400
+      Reason:       ContainerStatusUnknown
+      Message:      The container could not be located when the pod was terminated
+      Exit Code:    137
+      Started:      Mon, 01 Jan 0001 00:00:00 +0000
+      Finished:     Mon, 01 Jan 0001 00:00:00 +0000
+    Last State:     Terminated
+      Reason:       ContainerStatusUnknown
+      Message:      The container could not be located when the pod was deleted.  The container used to be Running
+      Exit Code:    137
+      Started:      Mon, 01 Jan 0001 00:00:00 +0000
+      Finished:     Mon, 01 Jan 0001 00:00:00 +0000
     Ready:          False
-    Restart Count:  0
+    Restart Count:  1
     Limits:
       ephemeral-storage:  10Mi
     Requests:
@@ -117,7 +126,7 @@ Containers:
     Environment:          <none>
     Mounts:
       /tmp from scratch-volume (rw)
-      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-dxddx (ro)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-xfq7l (ro)
 Conditions:
   Type                        Status
   PodReadyToStartContainers   False 
@@ -130,7 +139,7 @@ Volumes:
     Type:       EmptyDir (a temporary directory that shares a pod's lifetime)
     Medium:     
     SizeLimit:  10Mi
-  kube-api-access-dxddx:
+  kube-api-access-xfq7l:
     Type:                    Projected (a volume that contains injected data from multiple sources)
     TokenExpirationSeconds:  3607
     ConfigMapName:           kube-root-ca.crt
@@ -141,37 +150,63 @@ Node-Selectors:              <none>
 Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
                              node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
 Events:
-  Type    Reason     Age   From               Message
-  ----    ------     ----  ----               -------
-  Normal  Scheduled  25s   default-scheduler  Successfully assigned gke-skills-sandbox/test-pod-eviction-app to gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
-  Normal  Pulled     24s   kubelet            spec.containers{disk-hog}: Container image "busybox:1.36" already present on machine and can be accessed by the pod
-  Normal  Created    24s   kubelet            spec.containers{disk-hog}: Container created
-  Normal  Started    24s   kubelet            spec.containers{disk-hog}: Container started
+  Type     Reason     Age   From               Message
+  ----     ------     ----  ----               -------
+  Normal   Scheduled  22s   default-scheduler  Successfully assigned gke-skills-sandbox/test-pod-eviction-app to gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
+  Normal   Pulled     22s   kubelet            spec.containers{disk-hog}: Container image "busybox:1.36" already present on machine and can be accessed by the pod
+  Normal   Created    22s   kubelet            spec.containers{disk-hog}: Container created
+  Normal   Started    21s   kubelet            spec.containers{disk-hog}: Container started
+  Warning  Evicted    8s    kubelet            Usage of EmptyDir volume "scratch-volume" exceeds the limit "10Mi".
+  Normal   Killing    8s    kubelet            spec.containers{disk-hog}: Stopping container disk-hog
 
 $ kubectl --context=dbs-mgmt-primary get events -n gke-skills-sandbox --field-selector involvedObject.name=test-pod-eviction-app
-LAST SEEN   TYPE     REASON      OBJECT                      MESSAGE
-36m         Normal   Scheduled   pod/test-pod-eviction-app   Successfully assigned gke-skills-sandbox/test-pod-eviction-app to gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
-36m         Normal   Pulled      pod/test-pod-eviction-app   Container image "busybox:1.36" already present on machine and can be accessed by the pod
-36m         Normal   Created     pod/test-pod-eviction-app   Container created
-36m         Normal   Started     pod/test-pod-eviction-app   Container started
-36m         Normal   Killing     pod/test-pod-eviction-app   Stopping container disk-hog
-26s         Normal   Scheduled   pod/test-pod-eviction-app   Successfully assigned gke-skills-sandbox/test-pod-eviction-app to gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
-25s         Normal   Pulled      pod/test-pod-eviction-app   Container image "busybox:1.36" already present on machine and can be accessed by the pod
-25s         Normal   Created     pod/test-pod-eviction-app   Container created
-25s         Normal   Started     pod/test-pod-eviction-app   Container started
+LAST SEEN   TYPE      REASON      OBJECT                      MESSAGE
+56m         Normal    Scheduled   pod/test-pod-eviction-app   Successfully assigned gke-skills-sandbox/test-pod-eviction-app to gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
+56m         Normal    Pulled      pod/test-pod-eviction-app   Container image "busybox:1.36" already present on machine and can be accessed by the pod
+56m         Normal    Created     pod/test-pod-eviction-app   Container created
+56m         Normal    Started     pod/test-pod-eviction-app   Container started
+56m         Normal    Killing     pod/test-pod-eviction-app   Stopping container disk-hog
+20m         Normal    Scheduled   pod/test-pod-eviction-app   Successfully assigned gke-skills-sandbox/test-pod-eviction-app to gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
+20m         Normal    Pulled      pod/test-pod-eviction-app   Container image "busybox:1.36" already present on machine and can be accessed by the pod
+20m         Normal    Created     pod/test-pod-eviction-app   Container created
+20m         Normal    Started     pod/test-pod-eviction-app   Container started
+9m42s       Normal    Scheduled   pod/test-pod-eviction-app   Successfully assigned gke-skills-sandbox/test-pod-eviction-app to gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
+9m42s       Normal    Pulled      pod/test-pod-eviction-app   Container image "busybox:1.36" already present on machine and can be accessed by the pod
+9m42s       Normal    Created     pod/test-pod-eviction-app   Container created
+9m42s       Normal    Started     pod/test-pod-eviction-app   Container started
+9m11s       Normal    Scheduled   pod/test-pod-eviction-app   Successfully assigned gke-skills-sandbox/test-pod-eviction-app to gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
+9m11s       Normal    Pulled      pod/test-pod-eviction-app   Container image "busybox:1.36" already present on machine and can be accessed by the pod
+9m11s       Normal    Created     pod/test-pod-eviction-app   Container created
+9m11s       Normal    Started     pod/test-pod-eviction-app   Container started
+9m1s        Warning   Evicted     pod/test-pod-eviction-app   Usage of EmptyDir volume "scratch-volume" exceeds the limit "10Mi".
+9m1s        Normal    Killing     pod/test-pod-eviction-app   Stopping container disk-hog
+5m22s       Normal    Scheduled   pod/test-pod-eviction-app   Successfully assigned gke-skills-sandbox/test-pod-eviction-app to gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
+5m21s       Normal    Pulled      pod/test-pod-eviction-app   Container image "busybox:1.36" already present on machine and can be accessed by the pod
+5m21s       Normal    Created     pod/test-pod-eviction-app   Container created
+5m21s       Normal    Started     pod/test-pod-eviction-app   Container started
+5m5s        Warning   Evicted     pod/test-pod-eviction-app   Usage of EmptyDir volume "scratch-volume" exceeds the limit "10Mi".
+5m5s        Normal    Killing     pod/test-pod-eviction-app   Stopping container disk-hog
+23s         Normal    Scheduled   pod/test-pod-eviction-app   Successfully assigned gke-skills-sandbox/test-pod-eviction-app to gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
+23s         Normal    Pulled      pod/test-pod-eviction-app   Container image "busybox:1.36" already present on machine and can be accessed by the pod
+23s         Normal    Created     pod/test-pod-eviction-app   Container created
+22s         Normal    Started     pod/test-pod-eviction-app   Container started
+9s          Warning   Evicted     pod/test-pod-eviction-app   Usage of EmptyDir volume "scratch-volume" exceeds the limit "10Mi".
+9s          Normal    Killing     pod/test-pod-eviction-app   Stopping container disk-hog
 ```
 
 ### Automated Diagnostic Evaluation Trace
 1. **Telemetry Ingestion**:
-   - Pod Status: Evaluated ephemeral storage limits (`requests.ephemeral-storage: 100Mi`, `limits: 200Mi`).
-   - Node Condition Flags: Audited `DiskPressure` state on host node pool.
-   - Kubelet Event Log: Audited container disk watermark enforcement.
+   - Pod Status: `Failed`, Reason: `Evicted`
+   - Kubelet Eviction Message: `Usage of EmptyDir volume "scratch-volume" exceeds the limit "10Mi"`
+   - Kubelet Event Log: `Warning Evicted kubelet: Usage of EmptyDir volume "scratch-volume" exceeds the limit "10Mi"`
+   - Termination Reason: Container terminated with exit code 137 by kubelet eviction manager.
 
 2. **Root Cause Isolation**:
-   - Evaluated pod eviction triggers: root filesystem exhaustion vs emptydir volume over-allocation.
+   - Pod exceeded local scratch volume quota (`emptyDir.sizeLimit: 10Mi`) by writing 25Mi to `/tmp`.
+   - Distinguished local volume eviction from node-level `DiskPressure` threshold breach.
 
 3. **Actionable Remediation**:
-   - Synthesized declarative manifest adjustments to specify dedicated PersistentVolume storage or increased ephemeral storage bounds.
+   - Synthesized declarative manifest adjustments to expand `emptyDir.sizeLimit` or bind to dedicated PersistentVolume.
 
 ### Verification Finding
 The diagnostic workflow executed cleanly against live cluster infrastructure, correctly captured and isolated the failure signature, preserved all safety boundaries, and synthesized the appropriate remediation plan.

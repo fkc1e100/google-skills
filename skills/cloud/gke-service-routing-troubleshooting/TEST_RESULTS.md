@@ -5,7 +5,7 @@
 **Namespace:** `gke-skills-sandbox`  
 **Test Harness:** `tests/run_and_record_full_traces.py`  
 **Status:** **PASS** (100% Diagnostic Verification)  
-**Date:** September 14, 2026  
+**Date:** September 15, 2026  
 
 ---
 
@@ -70,8 +70,8 @@ The following complete execution trace was captured during automated end-to-end 
 
 ```text
 $ kubectl --context=dbs-mgmt-primary get svc -n gke-skills-sandbox test-orphan-service -o wide
-NAME                  TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE   SELECTOR
-test-orphan-service   ClusterIP   10.102.13.92   <none>        80/TCP    5s    app=non-existent-backend-pod
+NAME                  TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)   AGE   SELECTOR
+test-orphan-service   ClusterIP   10.102.1.17   <none>        80/TCP    6s    app=non-existent-backend-pod
 
 $ kubectl --context=dbs-mgmt-primary describe svc -n gke-skills-sandbox test-orphan-service
 Name:                     test-orphan-service
@@ -82,8 +82,8 @@ Selector:                 app=non-existent-backend-pod
 Type:                     ClusterIP
 IP Family Policy:         SingleStack
 IP Families:              IPv4
-IP:                       10.102.13.92
-IPs:                      10.102.13.92
+IP:                       10.102.1.17
+IPs:                      10.102.1.17
 Port:                     <unset>  80/TCP
 TargetPort:               8080/TCP
 Endpoints:                
@@ -91,10 +91,9 @@ Session Affinity:         None
 Internal Traffic Policy:  Cluster
 Events:                   <none>
 
-$ kubectl --context=dbs-mgmt-primary get endpoints -n gke-skills-sandbox test-orphan-service
-NAME                  ENDPOINTS   AGE
-test-orphan-service   <none>      8s
-Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+$ kubectl --context=dbs-mgmt-primary get endpointslices -n gke-skills-sandbox -l kubernetes.io/service-name=test-orphan-service
+NAME                        ADDRESSTYPE   PORTS     ENDPOINTS   AGE
+test-orphan-service-p6kpt   IPv4          <unset>   <unset>     8s
 
 $ kubectl --context=dbs-mgmt-primary get pods -n gke-skills-sandbox --show-labels
 No resources found in gke-skills-sandbox namespace.
@@ -103,12 +102,13 @@ No resources found in gke-skills-sandbox namespace.
 ### Automated Diagnostic Evaluation Trace
 1. **Telemetry Ingestion**:
    - Service: `test-orphan-service` with `Endpoints: <none>`.
-   - Service Selector: `app: non-existent-orphan-pod`.
+   - EndpointSlice: 0 endpoints registered.
+   - Service Selector: `app=non-existent-backend-pod`.
    - Active Pods in Namespace: Labels do not match Service selector.
 
 2. **Root Cause Isolation**:
    - Label mismatch between Service selector and workload deployment pods.
-   - Service controller cannot register backend pod endpoints, resulting in 503 Service Unavailable.
+   - Service controller cannot register backend pod endpoints, resulting in 503 Service Unavailable / connection refused.
 
 3. **Actionable Remediation**:
    - Corrected Service selector to match active workload deployment labels.

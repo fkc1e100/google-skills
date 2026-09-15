@@ -5,7 +5,7 @@
 **Namespace:** `gke-skills-sandbox`  
 **Test Harness:** `tests/run_and_record_full_traces.py`  
 **Status:** **PASS** (100% Diagnostic Verification)  
-**Date:** September 14, 2026  
+**Date:** September 15, 2026  
 
 ---
 
@@ -81,12 +81,12 @@ The following complete execution trace was captured during automated end-to-end 
 ```text
 $ kubectl --context=dbs-mgmt-primary get netpol -n gke-skills-sandbox deny-ingress-netpol -o wide
 NAME                  POD-SELECTOR             AGE
-deny-ingress-netpol   app=test-netpol-server   6s
+deny-ingress-netpol   app=test-netpol-server   5s
 
 $ kubectl --context=dbs-mgmt-primary describe netpol -n gke-skills-sandbox deny-ingress-netpol
 Name:         deny-ingress-netpol
 Namespace:    gke-skills-sandbox
-Created on:   2026-09-15 00:06:59 -0400 EDT
+Created on:   2026-09-15 00:27:06 -0400 EDT
 Labels:       <none>
 Annotations:  <none>
 Spec:

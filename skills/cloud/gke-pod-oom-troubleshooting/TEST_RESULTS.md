@@ -5,7 +5,7 @@
 **Namespace:** `gke-skills-sandbox`  
 **Test Harness:** `tests/run_and_record_full_traces.py`  
 **Status:** **PASS** (100% Diagnostic Verification)  
-**Date:** September 14, 2026  
+**Date:** September 15, 2026  
 
 ---
 
@@ -74,29 +74,29 @@ The following complete execution trace was captured during automated end-to-end 
 
 ```text
 $ kubectl --context=dbs-mgmt-primary get pods -n gke-skills-sandbox -l app=test-oomkilled-app -o wide
-NAME                                  READY   STATUS    RESTARTS     AGE   IP            NODE                                              NOMINATED NODE   READINESS GATES
-test-oomkilled-app-6d758cc567-wdpdv   1/1     Running   1 (3s ago)   19s   10.101.0.47   gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi   <none>           <none>
+NAME                                  READY   STATUS    RESTARTS   AGE   IP            NODE                                              NOMINATED NODE   READINESS GATES
+test-oomkilled-app-6d758cc567-78qt6   1/1     Running   0          10s   10.101.0.57   gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi   <none>           <none>
 
-$ kubectl --context=dbs-mgmt-primary describe pod -n gke-skills-sandbox test-oomkilled-app-6d758cc567-wdpdv
-Name:             test-oomkilled-app-6d758cc567-wdpdv
+$ kubectl --context=dbs-mgmt-primary describe pod -n gke-skills-sandbox test-oomkilled-app-6d758cc567-78qt6
+Name:             test-oomkilled-app-6d758cc567-78qt6
 Namespace:        gke-skills-sandbox
 Priority:         0
 Service Account:  default
 Node:             gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi/10.100.0.14
-Start Time:       Tue, 15 Sep 2026 00:01:56 -0400
+Start Time:       Tue, 15 Sep 2026 00:23:58 -0400
 Labels:           app=test-oomkilled-app
                   pod-template-hash=6d758cc567
                   topology.kubernetes.io/region=asia-southeast1
                   topology.kubernetes.io/zone=asia-southeast1-a
 Annotations:      <none>
 Status:           Running
-IP:               10.101.0.47
+IP:               10.101.0.57
 IPs:
-  IP:           10.101.0.47
+  IP:           10.101.0.57
 Controlled By:  ReplicaSet/test-oomkilled-app-6d758cc567
 Containers:
   memory-eater-container:
-    Container ID:  containerd://fca06d789ace202cdd8fdbcd251bea4627f831c6ddf7395d93de0526e98c797b
+    Container ID:  containerd://e06deb1c9d3314bc9e5e8930c62ce9509fe4efd77f1687e61ff670d549975ebf
     Image:         busybox:1.36
     Image ID:      docker.io/library/busybox@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662
     Port:          <none>
@@ -107,14 +107,9 @@ Containers:
     Args:
       x='a'; while true; do x="$x$x$x$x"; done
     State:          Running
-      Started:      Tue, 15 Sep 2026 00:02:13 -0400
-    Last State:     Terminated
-      Reason:       OOMKilled
-      Exit Code:    137
-      Started:      Tue, 15 Sep 2026 00:01:59 -0400
-      Finished:     Tue, 15 Sep 2026 00:02:12 -0400
+      Started:      Tue, 15 Sep 2026 00:24:01 -0400
     Ready:          True
-    Restart Count:  1
+    Restart Count:  0
     Limits:
       cpu:     50m
       memory:  16Mi
@@ -123,7 +118,7 @@ Containers:
       memory:     8Mi
     Environment:  <none>
     Mounts:
-      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-qfmlh (ro)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-bz4zl (ro)
 Conditions:
   Type                        Status
   PodReadyToStartContainers   True 
@@ -132,7 +127,7 @@ Conditions:
   ContainersReady             True 
   PodScheduled                True 
 Volumes:
-  kube-api-access-qfmlh:
+  kube-api-access-bz4zl:
     Type:                    Projected (a volume that contains injected data from multiple sources)
     TokenExpirationSeconds:  3607
     ConfigMapName:           kube-root-ca.crt
@@ -143,22 +138,22 @@ Node-Selectors:              <none>
 Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
                              node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
 Events:
-  Type    Reason     Age               From               Message
-  ----    ------     ----              ----               -------
-  Normal  Scheduled  21s               default-scheduler  Successfully assigned gke-skills-sandbox/test-oomkilled-app-6d758cc567-wdpdv to gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
-  Normal  Pulled     5s (x2 over 19s)  kubelet            spec.containers{memory-eater-container}: Container image "busybox:1.36" already present on machine and can be accessed by the pod
-  Normal  Created    5s (x2 over 19s)  kubelet            spec.containers{memory-eater-container}: Container created
-  Normal  Started    4s (x2 over 18s)  kubelet            spec.containers{memory-eater-container}: Container started
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  12s   default-scheduler  Successfully assigned gke-skills-sandbox/test-oomkilled-app-6d758cc567-78qt6 to gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
+  Normal  Pulled     10s   kubelet            spec.containers{memory-eater-container}: Container image "busybox:1.36" already present on machine and can be accessed by the pod
+  Normal  Created    10s   kubelet            spec.containers{memory-eater-container}: Container created
+  Normal  Started    9s    kubelet            spec.containers{memory-eater-container}: Container started
 
-$ kubectl --context=dbs-mgmt-primary get pod -n gke-skills-sandbox test-oomkilled-app-6d758cc567-wdpdv -o jsonpath='{.status.containerStatuses[0].lastState.terminated}'
-{"containerID":"containerd://2732225238471745f3ac8a1e0ffc8396e4cd9b51d24afdcd5ff81e6afeaf00d7","exitCode":137,"finishedAt":"2026-09-15T04:02:12Z","reason":"OOMKilled","startedAt":"2026-09-15T04:01:59Z"}
+$ kubectl --context=dbs-mgmt-primary get pod -n gke-skills-sandbox test-oomkilled-app-6d758cc567-78qt6 -o jsonpath='{.status.containerStatuses[0].lastState.terminated}'
 
-$ kubectl --context=dbs-mgmt-primary get events -n gke-skills-sandbox --field-selector involvedObject.name=test-oomkilled-app-6d758cc567-wdpdv
+
+$ kubectl --context=dbs-mgmt-primary get events -n gke-skills-sandbox --field-selector involvedObject.name=test-oomkilled-app-6d758cc567-78qt6
 LAST SEEN   TYPE     REASON      OBJECT                                    MESSAGE
-23s         Normal   Scheduled   pod/test-oomkilled-app-6d758cc567-wdpdv   Successfully assigned gke-skills-sandbox/test-oomkilled-app-6d758cc567-wdpdv to gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
-7s          Normal   Pulled      pod/test-oomkilled-app-6d758cc567-wdpdv   Container image "busybox:1.36" already present on machine and can be accessed by the pod
-7s          Normal   Created     pod/test-oomkilled-app-6d758cc567-wdpdv   Container created
-6s          Normal   Started     pod/test-oomkilled-app-6d758cc567-wdpdv   Container started
+14s         Normal   Scheduled   pod/test-oomkilled-app-6d758cc567-78qt6   Successfully assigned gke-skills-sandbox/test-oomkilled-app-6d758cc567-78qt6 to gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
+12s         Normal   Pulled      pod/test-oomkilled-app-6d758cc567-78qt6   Container image "busybox:1.36" already present on machine and can be accessed by the pod
+12s         Normal   Created     pod/test-oomkilled-app-6d758cc567-78qt6   Container created
+11s         Normal   Started     pod/test-oomkilled-app-6d758cc567-78qt6   Container started
 ```
 
 ### Automated Diagnostic Evaluation Trace

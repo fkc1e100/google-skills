@@ -5,7 +5,7 @@
 **Namespace:** `gke-skills-sandbox`  
 **Test Harness:** `tests/run_and_record_full_traces.py`  
 **Status:** **PASS** (100% Diagnostic Verification)  
-**Date:** September 14, 2026  
+**Date:** September 15, 2026  
 
 ---
 
@@ -69,17 +69,17 @@ The following complete execution trace was captured during automated end-to-end 
 ```text
 $ kubectl --context=dbs-mgmt-primary get pods -n gke-skills-sandbox -l app=test-taint-mismatch-app -o wide
 NAME                                       READY   STATUS    RESTARTS   AGE   IP       NODE     NOMINATED NODE   READINESS GATES
-test-taint-mismatch-app-7f9598d694-wk85w   0/1     Pending   0          32s   <none>   <none>   <none>           <none>
+test-taint-mismatch-app-7f9598d694-8hr2k   0/1     Pending   0          7s    <none>   <none>   <none>           <none>
 
-$ kubectl --context=dbs-mgmt-primary describe pod -n gke-skills-sandbox test-taint-mismatch-app
-Name:             test-taint-mismatch-app-7f9598d694-wk85w
+$ kubectl --context=dbs-mgmt-primary describe pod -n gke-skills-sandbox test-taint-mismatch-app-7f9598d694-8hr2k
+Name:             test-taint-mismatch-app-7f9598d694-8hr2k
 Namespace:        gke-skills-sandbox
 Priority:         0
 Service Account:  default
 Node:             <none>
 Labels:           app=test-taint-mismatch-app
                   pod-template-hash=7f9598d694
-Annotations:      cloud.google.com/cluster_autoscaler_unhelpable_since: 2026-09-15T04:03:59+0000
+Annotations:      cloud.google.com/cluster_autoscaler_unhelpable_since: 2026-09-15T04:24:58+0000
                   cloud.google.com/cluster_autoscaler_unhelpable_until: Inf
 Status:           Pending
 IP:               
@@ -98,12 +98,12 @@ Containers:
       memory:     16Mi
     Environment:  <none>
     Mounts:
-      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-w5bht (ro)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-km6gh (ro)
 Conditions:
   Type           Status
   PodScheduled   False 
 Volumes:
-  kube-api-access-w5bht:
+  kube-api-access-km6gh:
     Type:                    Projected (a volume that contains injected data from multiple sources)
     TokenExpirationSeconds:  3607
     ConfigMapName:           kube-root-ca.crt
@@ -116,8 +116,8 @@ Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists fo
 Events:
   Type     Reason             Age   From                Message
   ----     ------             ----  ----                -------
-  Warning  FailedScheduling   34s   default-scheduler   0/4 nodes are available: 1 node(s) had untolerated taint(s), 3 node(s) didn't match Pod's node affinity/selector. no new claims to deallocate, preemption: 0/4 nodes are available: 4 Preemption is not helpful for scheduling.
-  Normal   NotTriggerScaleUp  34s   cluster-autoscaler  Pod didn't trigger scale-up: 1 node(s) had untolerated taint(s)
+  Warning  FailedScheduling   9s    default-scheduler   0/4 nodes are available: 1 node(s) had untolerated taint(s), 3 node(s) didn't match Pod's node affinity/selector. no new claims to deallocate, preemption: 0/4 nodes are available: 4 Preemption is not helpful for scheduling.
+  Normal   NotTriggerScaleUp  9s    cluster-autoscaler  Pod didn't trigger scale-up: 1 node(s) had untolerated taint(s)
 
 $ kubectl --context=dbs-mgmt-primary get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints
 NAME                                              TAINTS
@@ -126,21 +126,21 @@ gke-dbs-mgmt-primary-primary-pool-d994c2a3-2o5t   <none>
 gke-dbs-mgmt-primary-primary-pool-d994c2a3-irgf   <none>
 gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi   <none>
 
-$ kubectl --context=dbs-mgmt-primary get events -n gke-skills-sandbox --field-selector involvedObject.name=test-taint-mismatch-app
-LAST SEEN   TYPE     REASON              OBJECT                               MESSAGE
-35m         Normal   ScalingReplicaSet   deployment/test-taint-mismatch-app   Scaled up replica set test-taint-mismatch-app-7f9598d694 from 0 to 1
-37s         Normal   ScalingReplicaSet   deployment/test-taint-mismatch-app   Scaled up replica set test-taint-mismatch-app-7f9598d694 from 0 to 1
+$ kubectl --context=dbs-mgmt-primary get events -n gke-skills-sandbox --field-selector involvedObject.name=test-taint-mismatch-app-7f9598d694-8hr2k
+LAST SEEN   TYPE      REASON              OBJECT                                         MESSAGE
+12s         Warning   FailedScheduling    pod/test-taint-mismatch-app-7f9598d694-8hr2k   0/4 nodes are available: 1 node(s) had untolerated taint(s), 3 node(s) didn't match Pod's node affinity/selector. no new claims to deallocate, preemption: 0/4 nodes are available: 4 Preemption is not helpful for scheduling.
+12s         Normal    NotTriggerScaleUp   pod/test-taint-mismatch-app-7f9598d694-8hr2k   Pod didn't trigger scale-up: 1 node(s) had untolerated taint(s)
 ```
 
 ### Automated Diagnostic Evaluation Trace
 1. **Telemetry Ingestion**:
    - Pod Status: `Pending`
    - Scheduler Event: `0/4 nodes available: node(s) had untolerated taint`
-   - Target Node Taints: Dedicated node pool configured with `NoSchedule` taint.
+   - Target Node Taints: Dedicated node pool configured with `nvidia.com/gpu:NoSchedule` taint.
    - Pod Tolerations: Empty (`[]`).
 
 2. **Root Cause Isolation**:
-   - Pod is targeted to run on a dedicated or GPU node pool but lacks the corresponding toleration.
+   - Pod is targeted to run on dedicated GPU node pool `gpu-pool` but lacks the corresponding toleration.
    - Taint-toleration matching algorithm flagged key mismatch.
 
 3. **Actionable Remediation**:

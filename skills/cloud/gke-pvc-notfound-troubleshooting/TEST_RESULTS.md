@@ -5,7 +5,7 @@
 **Namespace:** `gke-skills-sandbox`  
 **Test Harness:** `tests/run_and_record_full_traces.py`  
 **Status:** **PASS** (100% Diagnostic Verification)  
-**Date:** September 14, 2026  
+**Date:** September 15, 2026  
 
 ---
 
@@ -81,7 +81,7 @@ The following complete execution trace was captured during automated end-to-end 
 ```text
 $ kubectl --context=dbs-mgmt-primary get pods -n gke-skills-sandbox -l app=test-pvc-notfound-app -o wide
 NAME                    READY   STATUS    RESTARTS   AGE   IP       NODE     NOMINATED NODE   READINESS GATES
-test-pvc-notfound-app   0/1     Pending   0          32s   <none>   <none>   <none>           <none>
+test-pvc-notfound-app   0/1     Pending   0          7s    <none>   <none>   <none>           <none>
 
 $ kubectl --context=dbs-mgmt-primary describe pod -n gke-skills-sandbox test-pvc-notfound-app
 Name:             test-pvc-notfound-app
@@ -90,7 +90,7 @@ Priority:         0
 Service Account:  default
 Node:             <none>
 Labels:           app=test-pvc-notfound-app
-Annotations:      cloud.google.com/cluster_autoscaler_unhelpable_since: 2026-09-15T04:05:01+0000
+Annotations:      cloud.google.com/cluster_autoscaler_unhelpable_since: 2026-09-15T04:25:33+0000
                   cloud.google.com/cluster_autoscaler_unhelpable_until: Inf
 Status:           Pending
 IP:               
@@ -103,7 +103,7 @@ Containers:
     Environment:  <none>
     Mounts:
       /data from missing-data-volume (rw)
-      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-h2hkj (ro)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-48w6l (ro)
 Conditions:
   Type           Status
   PodScheduled   False 
@@ -112,7 +112,7 @@ Volumes:
     Type:       PersistentVolumeClaim (a reference to a PersistentVolumeClaim in the same namespace)
     ClaimName:  ghost-pvc-claim-missing
     ReadOnly:   false
-  kube-api-access-h2hkj:
+  kube-api-access-48w6l:
     Type:                    Projected (a volume that contains injected data from multiple sources)
     TokenExpirationSeconds:  3607
     ConfigMapName:           kube-root-ca.crt
@@ -125,18 +125,20 @@ Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists fo
 Events:
   Type     Reason             Age   From                Message
   ----     ------             ----  ----                -------
-  Warning  FailedScheduling   34s   default-scheduler   0/4 nodes are available: persistentvolumeclaim "ghost-pvc-claim-missing" not found. not found
-  Normal   NotTriggerScaleUp  33s   cluster-autoscaler  Pod didn't trigger scale-up: 1 persistentvolumeclaim "ghost-pvc-claim-missing" not found
+  Warning  FailedScheduling   9s    default-scheduler   0/4 nodes are available: persistentvolumeclaim "ghost-pvc-claim-missing" not found. not found
+  Normal   NotTriggerScaleUp  9s    cluster-autoscaler  Pod didn't trigger scale-up: 1 persistentvolumeclaim "ghost-pvc-claim-missing" not found
 
 $ kubectl --context=dbs-mgmt-primary get pvc -n gke-skills-sandbox
 No resources found in gke-skills-sandbox namespace.
 
 $ kubectl --context=dbs-mgmt-primary get events -n gke-skills-sandbox --field-selector involvedObject.name=test-pvc-notfound-app
 LAST SEEN   TYPE      REASON              OBJECT                      MESSAGE
-35m         Warning   FailedScheduling    pod/test-pvc-notfound-app   0/3 nodes are available: persistentvolumeclaim "ghost-pvc-claim-missing" not found. not found
-35m         Normal    NotTriggerScaleUp   pod/test-pvc-notfound-app   Pod didn't trigger scale-up: 1 persistentvolumeclaim "ghost-pvc-claim-missing" not found
-36s         Warning   FailedScheduling    pod/test-pvc-notfound-app   0/4 nodes are available: persistentvolumeclaim "ghost-pvc-claim-missing" not found. not found
-35s         Normal    NotTriggerScaleUp   pod/test-pvc-notfound-app   Pod didn't trigger scale-up: 1 persistentvolumeclaim "ghost-pvc-claim-missing" not found
+56m         Warning   FailedScheduling    pod/test-pvc-notfound-app   0/3 nodes are available: persistentvolumeclaim "ghost-pvc-claim-missing" not found. not found
+56m         Normal    NotTriggerScaleUp   pod/test-pvc-notfound-app   Pod didn't trigger scale-up: 1 persistentvolumeclaim "ghost-pvc-claim-missing" not found
+20m         Warning   FailedScheduling    pod/test-pvc-notfound-app   0/4 nodes are available: persistentvolumeclaim "ghost-pvc-claim-missing" not found. not found
+20m         Normal    NotTriggerScaleUp   pod/test-pvc-notfound-app   Pod didn't trigger scale-up: 1 persistentvolumeclaim "ghost-pvc-claim-missing" not found
+11s         Warning   FailedScheduling    pod/test-pvc-notfound-app   0/4 nodes are available: persistentvolumeclaim "ghost-pvc-claim-missing" not found. not found
+11s         Normal    NotTriggerScaleUp   pod/test-pvc-notfound-app   Pod didn't trigger scale-up: 1 persistentvolumeclaim "ghost-pvc-claim-missing" not found
 ```
 
 ### Automated Diagnostic Evaluation Trace
