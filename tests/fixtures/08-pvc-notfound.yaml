@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pvc-notfound-app
+  namespace: gke-skills-sandbox
+  labels:
+    app: test-pvc-notfound-app
+spec:
+  containers:
+  - name: pause
+    image: gcr.io/google-containers/pause:3.2
+    volumeMounts:
+    - mountPath: /data
+      name: missing-data-volume
+  volumes:
+  - name: missing-data-volume
+    persistentVolumeClaim:
+      claimName: ghost-pvc-claim-missing
