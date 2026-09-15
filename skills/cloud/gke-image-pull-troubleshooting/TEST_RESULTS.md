@@ -5,7 +5,7 @@
 **Namespace:** `gke-skills-sandbox`  
 **Test Harness:** `tests/run_and_record_full_traces.py`  
 **Status:** **PASS** (100% Diagnostic Verification)  
-**Date:** September 14, 2026  
+**Date:** September 15, 2026  
 
 ---
 
@@ -72,24 +72,24 @@ The following complete execution trace was captured during automated end-to-end 
 ```text
 $ kubectl --context=dbs-mgmt-primary get pods -n gke-skills-sandbox -l app=test-imagepull-app -o wide
 NAME                                  READY   STATUS         RESTARTS   AGE   IP            NODE                                              NOMINATED NODE   READINESS GATES
-test-imagepull-app-7d5756bd88-tttbp   0/1     ErrImagePull   0          8s    10.101.0.46   gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi   <none>           <none>
+test-imagepull-app-7d5756bd88-xjbk4   0/1     ErrImagePull   0          8s    10.101.0.56   gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi   <none>           <none>
 
-$ kubectl --context=dbs-mgmt-primary describe pod -n gke-skills-sandbox test-imagepull-app-7d5756bd88-tttbp
-Name:             test-imagepull-app-7d5756bd88-tttbp
+$ kubectl --context=dbs-mgmt-primary describe pod -n gke-skills-sandbox test-imagepull-app-7d5756bd88-xjbk4
+Name:             test-imagepull-app-7d5756bd88-xjbk4
 Namespace:        gke-skills-sandbox
 Priority:         0
 Service Account:  default
 Node:             gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi/10.100.0.14
-Start Time:       Tue, 15 Sep 2026 00:01:39 -0400
+Start Time:       Tue, 15 Sep 2026 00:23:41 -0400
 Labels:           app=test-imagepull-app
                   pod-template-hash=7d5756bd88
                   topology.kubernetes.io/region=asia-southeast1
                   topology.kubernetes.io/zone=asia-southeast1-a
 Annotations:      <none>
 Status:           Pending
-IP:               10.101.0.46
+IP:               10.101.0.56
 IPs:
-  IP:           10.101.0.46
+  IP:           10.101.0.56
 Controlled By:  ReplicaSet/test-imagepull-app-7d5756bd88
 Containers:
   invalid-image-container:
@@ -110,7 +110,7 @@ Containers:
       memory:     16Mi
     Environment:  <none>
     Mounts:
-      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-rkl5j (ro)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-ff988 (ro)
 Conditions:
   Type                        Status
   PodReadyToStartContainers   True 
@@ -119,7 +119,7 @@ Conditions:
   ContainersReady             False 
   PodScheduled                True 
 Volumes:
-  kube-api-access-rkl5j:
+  kube-api-access-ff988:
     Type:                    Projected (a volume that contains injected data from multiple sources)
     TokenExpirationSeconds:  3607
     ConfigMapName:           kube-root-ca.crt
@@ -132,21 +132,21 @@ Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists fo
 Events:
   Type     Reason     Age   From               Message
   ----     ------     ----  ----               -------
-  Normal   Scheduled  9s    default-scheduler  Successfully assigned gke-skills-sandbox/test-imagepull-app-7d5756bd88-tttbp to gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
+  Normal   Scheduled  10s   default-scheduler  Successfully assigned gke-skills-sandbox/test-imagepull-app-7d5756bd88-xjbk4 to gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
   Normal   Pulling    7s    kubelet            spec.containers{invalid-image-container}: Pulling image "gcr.io/gca-gke-2025/non-existent-diagnostic-test-image:v999"
   Warning  Failed     5s    kubelet            spec.containers{invalid-image-container}: Failed to pull image "gcr.io/gca-gke-2025/non-existent-diagnostic-test-image:v999": rpc error: code = NotFound desc = failed to pull and unpack image "gcr.io/gca-gke-2025/non-existent-diagnostic-test-image:v999": failed to resolve reference "gcr.io/gca-gke-2025/non-existent-diagnostic-test-image:v999": gcr.io/gca-gke-2025/non-existent-diagnostic-test-image:v999: not found
   Warning  Failed     5s    kubelet            spec.containers{invalid-image-container}: Error: ErrImagePull
   Normal   BackOff    4s    kubelet            spec.containers{invalid-image-container}: Back-off pulling image "gcr.io/gca-gke-2025/non-existent-diagnostic-test-image:v999"
   Warning  Failed     4s    kubelet            spec.containers{invalid-image-container}: Error: ImagePullBackOff
 
-$ kubectl --context=dbs-mgmt-primary get events -n gke-skills-sandbox --field-selector involvedObject.name=test-imagepull-app-7d5756bd88-tttbp
+$ kubectl --context=dbs-mgmt-primary get events -n gke-skills-sandbox --field-selector involvedObject.name=test-imagepull-app-7d5756bd88-xjbk4
 LAST SEEN   TYPE      REASON      OBJECT                                    MESSAGE
-10s         Normal    Scheduled   pod/test-imagepull-app-7d5756bd88-tttbp   Successfully assigned gke-skills-sandbox/test-imagepull-app-7d5756bd88-tttbp to gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
-8s          Normal    Pulling     pod/test-imagepull-app-7d5756bd88-tttbp   Pulling image "gcr.io/gca-gke-2025/non-existent-diagnostic-test-image:v999"
-6s          Warning   Failed      pod/test-imagepull-app-7d5756bd88-tttbp   Failed to pull image "gcr.io/gca-gke-2025/non-existent-diagnostic-test-image:v999": rpc error: code = NotFound desc = failed to pull and unpack image "gcr.io/gca-gke-2025/non-existent-diagnostic-test-image:v999": failed to resolve reference "gcr.io/gca-gke-2025/non-existent-diagnostic-test-image:v999": gcr.io/gca-gke-2025/non-existent-diagnostic-test-image:v999: not found
-6s          Warning   Failed      pod/test-imagepull-app-7d5756bd88-tttbp   Error: ErrImagePull
-5s          Normal    BackOff     pod/test-imagepull-app-7d5756bd88-tttbp   Back-off pulling image "gcr.io/gca-gke-2025/non-existent-diagnostic-test-image:v999"
-5s          Warning   Failed      pod/test-imagepull-app-7d5756bd88-tttbp   Error: ImagePullBackOff
+11s         Normal    Scheduled   pod/test-imagepull-app-7d5756bd88-xjbk4   Successfully assigned gke-skills-sandbox/test-imagepull-app-7d5756bd88-xjbk4 to gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
+8s          Normal    Pulling     pod/test-imagepull-app-7d5756bd88-xjbk4   Pulling image "gcr.io/gca-gke-2025/non-existent-diagnostic-test-image:v999"
+6s          Warning   Failed      pod/test-imagepull-app-7d5756bd88-xjbk4   Failed to pull image "gcr.io/gca-gke-2025/non-existent-diagnostic-test-image:v999": rpc error: code = NotFound desc = failed to pull and unpack image "gcr.io/gca-gke-2025/non-existent-diagnostic-test-image:v999": failed to resolve reference "gcr.io/gca-gke-2025/non-existent-diagnostic-test-image:v999": gcr.io/gca-gke-2025/non-existent-diagnostic-test-image:v999: not found
+6s          Warning   Failed      pod/test-imagepull-app-7d5756bd88-xjbk4   Error: ErrImagePull
+5s          Normal    BackOff     pod/test-imagepull-app-7d5756bd88-xjbk4   Back-off pulling image "gcr.io/gca-gke-2025/non-existent-diagnostic-test-image:v999"
+5s          Warning   Failed      pod/test-imagepull-app-7d5756bd88-xjbk4   Error: ImagePullBackOff
 ```
 
 ### Automated Diagnostic Evaluation Trace
