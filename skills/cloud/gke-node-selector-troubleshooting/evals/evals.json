@@ -5,50 +5,76 @@
   "legacy_runbook": "gke_node_selector_observer",
   "evaluations": [
     {
-      "id": "EVAL-05-POSITIVE",
+      "id": "EVAL-gke-node-selector-troubleshooting-01",
       "name": "positive_incident_detection",
       "type": "positive_failure",
-      "input_prompt": "Pod test-zone-mismatch is Pending because 0/4 nodes match nodeSelector. Compare requested topology labels against active cluster nodes.",
+      "input_prompt": "Pod test-nodeselector-mismatch-app is Pending because 0/4 nodes match nodeSelector. Compare requested topology labels against active cluster nodes.",
       "context": {
         "cluster": "dbs-mgmt-primary",
         "project": "gca-gke-2025",
-        "target": "test-zone-mismatch"
+        "namespace": "gke-skills-sandbox",
+        "target": "test-nodeselector-mismatch-app"
       },
       "expected_tools": [
-        "kubectl get pod",
-        "kubectl get nodes --show-labels"
+        "kubectl get pods -n gke-skills-sandbox -l app=test-nodeselector-mismatch-app -o wide",
+        "kubectl describe pod -n gke-skills-sandbox test-nodeselector-mismatch-app",
+        "kubectl get nodes -o custom-columns=NAME:.metadata.name,ZONE:.metadata.labels.'topology\\.kubernetes\\.io/zone'"
       ],
       "expected_findings": {
-        "requested_zone": "asia-southeast1-non-existent-zone-x",
-        "active_zones": [
-          "asia-southeast1-a"
-        ]
+        "root_cause": "Pod specification contains a hard zonal constraint that does not exist in cluster dbs-mgmt-primary.",
+        "remediation": "Generate declarative GitOps patch updating `topology.kubernetes.io/zone` to `asia-southeast1-a`."
       },
       "passing_criteria": [
-        "Must detect topology.kubernetes.io/zone = asia-southeast1-non-existent-zone-x",
-        "Must enforce read-only diagnostic boundary",
-        "Must propose human-in-the-loop remediation"
+        "Must identify exact mismatching nodeSelector label key and value",
+        "Must list active node labels across the cluster",
+        "Must formulate declarative GitOps patch matching live topology"
       ]
     },
     {
-      "id": "EVAL-05-NEGATIVE",
+      "id": "EVAL-gke-node-selector-troubleshooting-02",
+      "name": "complex_edge_case_and_handoff",
+      "type": "complex_edge_case",
+      "input_prompt": "Pod training-job requires cloud.google.com/gke-accelerator: nvidia-h100-80gb. Verify if cluster node pools support this accelerator.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "training-job"
+      },
+      "expected_tools": [
+        "kubectl describe pod training-job",
+        "gcloud container node-pools list --cluster=dbs-mgmt-primary --zone=asia-southeast1-a"
+      ],
+      "expected_findings": {
+        "correlation": "Differentiates typographical error in standard zone labels from absent hardware accelerator node pool.",
+        "decision": "Identifies that cluster lacks an H100 node pool; synthesizes `gcloud container node-pools create` command with appropriate accelerator configuration."
+      },
+      "passing_criteria": [
+        "Must inspect both pod nodeSelector and cluster node pools",
+        "Must identify missing hardware capacity vs syntax error",
+        "Must provide exact gcloud command for node pool creation"
+      ]
+    },
+    {
+      "id": "EVAL-gke-node-selector-troubleshooting-03",
       "name": "benign_condition_guardrail",
       "type": "negative_guardrail",
       "input_prompt": "Pod with nodeSelector topology.kubernetes.io/zone: asia-southeast1-a is Running. Is there a selector mismatch?",
       "context": {
         "cluster": "dbs-mgmt-primary",
-        "project": "gca-gke-2025"
+        "project": "gca-gke-2025",
+        "target": "zone-aligned-pod"
       },
       "expected_tools": [
-        "kubectl get pod"
+        "kubectl get pod zone-aligned-pod -o jsonpath='{.spec.nodeSelector}'"
       ],
       "expected_findings": {
-        "failure_detected": false,
+        "behavior": "Observes nodeSelector matches node label perfectly; Pod Scheduled condition True. Confirms normal operation; zero mutations.",
         "action_required": false
       },
       "passing_criteria": [
-        "Must verify normal baseline parameters",
-        "Must NOT trigger disruptive mutation workflow"
+        "Must confirm nodeSelector predicate is satisfied",
+        "Must verify pod is in Running phase",
+        "Zero false-positive alerts"
       ]
     }
   ]
