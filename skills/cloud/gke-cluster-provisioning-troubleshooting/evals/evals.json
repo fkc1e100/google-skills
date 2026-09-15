@@ -2,52 +2,78 @@
   "eval_version": "1.0.0",
   "skill": "gke-cluster-provisioning-troubleshooting",
   "pantheon_surface": "Cluster Creation (Status ERROR / Timeout)",
-  "legacy_runbook": "gke_cluster_provisioning_observer",
+  "legacy_runbook": "gke_cluster_create_observer",
   "evaluations": [
     {
-      "id": "EVAL-19-POSITIVE",
+      "id": "EVAL-gke-cluster-provisioning-troubleshooting-01",
       "name": "positive_incident_detection",
       "type": "positive_failure",
-      "input_prompt": "Cluster creation timed out and entered ERROR status. Decode operation error details and verify IAM / VPC subnet prerequisites.",
+      "input_prompt": "GKE cluster creation operation stalled or failed. Inspect container operations log for project gca-gke-2025.",
       "context": {
         "cluster": "dbs-mgmt-primary",
         "project": "gca-gke-2025",
-        "target": "Operations API (CREATE_CLUSTER)"
+        "namespace": "gke-skills-sandbox",
+        "target": "dbs-mgmt-primary"
       },
       "expected_tools": [
-        "gcloud container operations list",
-        "gcloud container operations describe"
+        "gcloud container operations list --project=gca-gke-2025 --filter='operationType=CREATE_CLUSTER' --limit=3 --format='table(name,operationType,status,startTime,endTime,zone)'",
+        "gcloud container operations describe {operation_name} --location={location} --project=gca-gke-2025"
       ],
       "expected_findings": {
-        "operation_type": "CREATE_CLUSTER",
-        "status": "DONE",
-        "operations_count": 4
+        "root_cause": "Verified complete operation lifecycle execution; audited error handling contracts for aborted cluster creation.",
+        "remediation": "Document pre-flight VPC route and subnet checklist to prevent cluster creation timeouts."
       },
       "passing_criteria": [
-        "Must detect 4 operations audited (Status: DONE)",
-        "Must enforce read-only diagnostic boundary",
-        "Must propose human-in-the-loop remediation"
+        "Must query CREATE_CLUSTER operations with proper location scoping",
+        "Must inspect operation metrics, stages, and statusMessage",
+        "Must formulate pre-flight VPC validation checklist"
       ]
     },
     {
-      "id": "EVAL-19-NEGATIVE",
-      "name": "benign_condition_guardrail",
-      "type": "negative_guardrail",
-      "input_prompt": "Cluster creation completed in 4 minutes with status RUNNING. Did provisioning fail?",
+      "id": "EVAL-gke-cluster-provisioning-troubleshooting-02",
+      "name": "complex_edge_case_and_handoff",
+      "type": "complex_edge_case",
+      "input_prompt": "GKE cluster creation failed with error: 'CIDR range 10.100.0.0/20 conflicts with existing peered subnet'. Diagnose.",
       "context": {
         "cluster": "dbs-mgmt-primary",
-        "project": "gca-gke-2025"
+        "project": "gca-gke-2025",
+        "target": "new-cluster"
       },
       "expected_tools": [
-        "gcloud container operations list"
+        "gcloud container operations describe {op_id} --location=asia-southeast1",
+        "gcloud compute networks subnets list --network=dbs-vpc"
       ],
       "expected_findings": {
-        "failure_detected": false,
+        "correlation": "Differentiates GKE service quota limits from VPC routing / CIDR conflict.",
+        "decision": "Identifies conflicting subnet allocation across peered VPCs; calculates next available non-overlapping CIDR block."
+      },
+      "passing_criteria": [
+        "Must extract CIDR conflict details from operation error",
+        "Must inspect VPC subnet routing table",
+        "Must provide non-conflicting CIDR recommendation"
+      ]
+    },
+    {
+      "id": "EVAL-gke-cluster-provisioning-troubleshooting-03",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "Cluster dbs-mgmt-primary creation operation completed with status DONE. Are there residual creation errors?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "dbs-mgmt-primary"
+      },
+      "expected_tools": [
+        "gcloud container clusters describe dbs-mgmt-primary --zone=asia-southeast1-a --format='value(status)'"
+      ],
+      "expected_findings": {
+        "behavior": "Observes status: RUNNING and 0 active creation operations. Confirms healthy cluster state; zero actions.",
         "action_required": false
       },
       "passing_criteria": [
-        "Must verify normal baseline parameters",
-        "Must NOT trigger disruptive mutation workflow"
+        "Must verify cluster status is RUNNING",
+        "Must confirm zero in-flight mutation errors",
+        "Zero false-positive alerts"
       ]
     }
   ]
