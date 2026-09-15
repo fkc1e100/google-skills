@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-netpol-server
+  namespace: gke-skills-sandbox
+  labels:
+    app: test-netpol-server
+spec:
+  containers:
+  - name: web
+    image: gcr.io/google-containers/pause:3.2
+    ports:
+    - containerPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-ingress-netpol
+  namespace: gke-skills-sandbox
+spec:
+  podSelector:
+    matchLabels:
+      app: test-netpol-server
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: authorized-app-only
