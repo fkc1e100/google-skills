@@ -5,7 +5,7 @@
 **Namespace:** `gke-skills-sandbox`  
 **Test Harness:** `tests/run_and_record_full_traces.py`  
 **Status:** **PASS** (100% Diagnostic Verification)  
-**Date:** September 14, 2026  
+**Date:** September 15, 2026  
 
 ---
 
@@ -74,15 +74,15 @@ operation-1788740023695-f6ae1fac-6033-4815-92f0-2158d60b15cb  CREATE_CLUSTER  DO
 operation-1788740043003-c6053677-3e90-4cd8-8c46-f0fdce32cf6c  CREATE_CLUSTER  DONE    2026-09-07T00:14:03.003026552Z  2026-09-07T00:20:31.608954487Z  asia-southeast1-a
 operation-1788740019919-91932dd4-ab38-43ef-b1ff-d0d1d1b0d385  CREATE_CLUSTER  DONE    2026-09-07T00:13:39.919126772Z  2026-09-07T00:19:58.05476632Z   asia-southeast1
 
-$ gcloud container operations describe operation-1788740043003-c6053677-3e90-4cd8-8c46-f0fdce32cf6c --zone=asia-southeast1-a --project=gca-gke-2025
-endTime: '2026-09-07T00:20:31.608954487Z'
-name: operation-1788740043003-c6053677-3e90-4cd8-8c46-f0fdce32cf6c
+$ gcloud container operations describe operation-1788740019919-91932dd4-ab38-43ef-b1ff-d0d1d1b0d385 --location=asia-southeast1 --project=gca-gke-2025
+endTime: '2026-09-07T00:19:58.05476632Z'
+name: operation-1788740019919-91932dd4-ab38-43ef-b1ff-d0d1d1b0d385
 operationType: CREATE_CLUSTER
 progress:
   metrics:
-  - intValue: '8'
+  - intValue: '9'
     name: CLUSTER_CONFIGURING
-  - intValue: '8'
+  - intValue: '9'
     name: CLUSTER_CONFIGURING_TOTAL
   - intValue: '11'
     name: CLUSTER_DEPLOYING
@@ -92,18 +92,18 @@ progress:
     name: CLUSTER_HEALTHCHECKING
   - intValue: '2'
     name: CLUSTER_HEALTHCHECKING_TOTAL
-selfLink: https://container.googleapis.com/v1/projects/764460891170/zones/asia-southeast1-a/operations/operation-1788740043003-c6053677-3e90-4cd8-8c46-f0fdce32cf6c
-startTime: '2026-09-07T00:14:03.003026552Z'
+selfLink: https://container.googleapis.com/v1/projects/764460891170/locations/asia-southeast1/operations/operation-1788740019919-91932dd4-ab38-43ef-b1ff-d0d1d1b0d385
+startTime: '2026-09-07T00:13:39.919126772Z'
 status: DONE
-targetLink: https://container.googleapis.com/v1/projects/764460891170/zones/asia-southeast1-a/clusters/dbs-mgmt-primary
-zone: asia-southeast1-a
+targetLink: https://container.googleapis.com/v1/projects/764460891170/locations/asia-southeast1/clusters/krmapihost-dbs-cc-ga
+zone: asia-southeast1
 ```
 
 ### Automated Diagnostic Evaluation Trace
 1. **Telemetry Ingestion**:
-   - GKE Operations API: Queried `CREATE_CLUSTER` lifecycle records.
-   - Target Cluster: `dbs-mgmt-primary`.
-   - Operation Stages: `CLUSTER_DEPLOYING` (11/11), `CLUSTER_CONFIGURING` (8/8), `CLUSTER_HEALTHCHECKING` (2/2).
+   - GKE Operations API: Queried `CREATE_CLUSTER` lifecycle records in `asia-southeast1`.
+   - Target Operation: `operation-1788740019919-91932dd4-ab38-43ef-b1ff-d0d1d1b0d385`.
+   - Operation Stages: `CLUSTER_DEPLOYING` (11/11), `CLUSTER_CONFIGURING` (9/9), `CLUSTER_HEALTHCHECKING` (2/2).
    - Final Status: `DONE` with empty statusMessage (clean execution).
 
 2. **Root Cause Isolation**:
