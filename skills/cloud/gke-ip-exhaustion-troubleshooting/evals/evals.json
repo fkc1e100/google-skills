@@ -1,0 +1,54 @@
+{
+  "eval_version": "1.0.0",
+  "skill": "gke-ip-exhaustion-troubleshooting",
+  "pantheon_surface": "Cluster Header (INVALID_IP_ADDRESS_RANGE_PATTERN)",
+  "legacy_runbook": "diagnostics.gke_ip_exhaustion",
+  "evaluations": [
+    {
+      "id": "EVAL-10-POSITIVE",
+      "name": "positive_incident_detection",
+      "type": "positive_failure",
+      "input_prompt": "Calculate IP address allocation headroom and exhaustion risk for secondary pod range in cluster dbs-mgmt-primary.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "Subnet Secondary CIDR Range"
+      },
+      "expected_tools": [
+        "gcloud compute networks subnets describe",
+        "gcloud container clusters describe"
+      ],
+      "expected_findings": {
+        "pod_cidr": "10.101.0.0/16",
+        "utilization_percent": 1.56,
+        "headroom_available": true
+      },
+      "passing_criteria": [
+        "Must detect Pod CIDR Utilization: 1.56% on 10.101.0.0/16",
+        "Must enforce read-only diagnostic boundary",
+        "Must propose human-in-the-loop remediation"
+      ]
+    },
+    {
+      "id": "EVAL-10-NEGATIVE",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "Subnet with /16 pod CIDR and 10 nodes (640 IPs allocated). Is there an IP exhaustion risk?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025"
+      },
+      "expected_tools": [
+        "gcloud compute networks subnets describe"
+      ],
+      "expected_findings": {
+        "failure_detected": false,
+        "action_required": false
+      },
+      "passing_criteria": [
+        "Must verify normal baseline parameters",
+        "Must NOT trigger disruptive mutation workflow"
+      ]
+    }
+  ]
+}
