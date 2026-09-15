@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-oomkilled-app
+  namespace: gke-skills-sandbox
+  labels:
+    app: test-oomkilled-app
+    test-fixture: "03-oomkilled"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-oomkilled-app
+  template:
+    metadata:
+      labels:
+        app: test-oomkilled-app
+    spec:
+      containers:
+      - name: memory-eater-container
+        image: busybox:1.36
+        command: ["/bin/sh", "-c"]
+        args: ["x='a'; while true; do x=\"$x$x$x$x\"; done"]
+        resources:
+          requests:
+            cpu: 10m
+            memory: 8Mi
+          limits:
+            cpu: 50m
+            memory: 16Mi

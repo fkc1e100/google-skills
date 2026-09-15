@@ -1,0 +1,81 @@
+{
+  "eval_version": "1.0.0",
+  "skill": "gke-pod-oom-troubleshooting",
+  "pantheon_surface": "Pod Details (message.startsWith('OOMKilled'))",
+  "legacy_runbook": "gke_pod_oom_observer",
+  "evaluations": [
+    {
+      "id": "EVAL-gke-pod-oom-troubleshooting-01",
+      "name": "positive_incident_detection",
+      "type": "positive_failure",
+      "input_prompt": "Pod test-oomkilled-app in gke-skills-sandbox was terminated by kernel with exitCode 137. Diagnose memory pressure.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "namespace": "gke-skills-sandbox",
+        "target": "test-oomkilled-app"
+      },
+      "expected_tools": [
+        "kubectl get pod -n gke-skills-sandbox -l app=test-oomkilled-app -o wide",
+        "kubectl describe pod -n gke-skills-sandbox test-oomkilled-app",
+        "kubectl get pod test-oomkilled-app -n gke-skills-sandbox -o jsonpath='{.status.containerStatuses[0].lastState.terminated}'"
+      ],
+      "expected_findings": {
+        "root_cause": "Process inside container attempted to allocate memory exceeding cgroup limit of 16Mi, triggering kernel SIGKILL.",
+        "remediation": "Synthesize declarative YAML patch increasing memory limit to 64Mi to accommodate workload working set."
+      },
+      "passing_criteria": [
+        "Must identify exitCode 137 and reason OOMKilled",
+        "Must differentiate container cgroup ceiling from node-level memory pressure",
+        "Must propose right-sized memory limits via GitOps PR"
+      ]
+    },
+    {
+      "id": "EVAL-gke-pod-oom-troubleshooting-02",
+      "name": "complex_edge_case_and_handoff",
+      "type": "complex_edge_case",
+      "input_prompt": "Pod payment-service in gke-skills-sandbox was terminated. Determine whether this was an individual container cgroup limit breach or host node MemoryPressure.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "payment-service"
+      },
+      "expected_tools": [
+        "kubectl describe pod payment-service -n gke-skills-sandbox",
+        "kubectl describe nodes | grep -E 'MemoryPressure|Allocated resources'"
+      ],
+      "expected_findings": {
+        "correlation": "Inspects host node condition flags. When node MemoryPressure is False, isolates fault to container cgroup limit rather than node starvation.",
+        "decision": "If node MemoryPressure is True, routes to `gke-node-notready-troubleshooting`; if False, diagnoses container memory sizing."
+      },
+      "passing_criteria": [
+        "Must inspect both pod containerStatuses and node Conditions",
+        "Must accurately attribute failure to container cgroup vs node threshold",
+        "Must maintain strict read-only boundary"
+      ]
+    },
+    {
+      "id": "EVAL-gke-pod-oom-troubleshooting-03",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "Pod redis-master in namespace production has memory limit 1Gi and usage 320Mi. Check for OOM risk.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "redis-master"
+      },
+      "expected_tools": [
+        "kubectl get pod redis-master -n production -o jsonpath='{.spec.containers[*].resources}'"
+      ],
+      "expected_findings": {
+        "behavior": "Observes memory usage at ~31% of limit with zero container restart history. Confirms healthy operating baseline and proposes zero mutations.",
+        "action_required": false
+      },
+      "passing_criteria": [
+        "Must compute utilization ratio accurately (<50%)",
+        "Must verify restartCount == 0",
+        "Zero false-positive alerts"
+      ]
+    }
+  ]
+}
