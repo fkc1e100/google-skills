@@ -1,0 +1,54 @@
+{
+  "eval_version": "1.0.0",
+  "skill": "gcp-compute-quota-troubleshooting",
+  "pantheon_surface": "Cluster Mutation (parseErrorMessageToQuotaError)",
+  "legacy_runbook": "diagnostics.gcp_resource_quotas",
+  "evaluations": [
+    {
+      "id": "EVAL-12-POSITIVE",
+      "name": "positive_incident_detection",
+      "type": "positive_failure",
+      "input_prompt": "Cluster node pool creation failed with quota exceeded error. Audit regional quota limit vs current usage for NVIDIA_L4_GPUS in asia-southeast1.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "GCE Regional Quota API"
+      },
+      "expected_tools": [
+        "gcloud compute regions describe --format=json"
+      ],
+      "expected_findings": {
+        "metric": "NVIDIA_L4_GPUS",
+        "limit": 16.0,
+        "usage": 0.0,
+        "shortfall": 0
+      },
+      "passing_criteria": [
+        "Must detect NVIDIA_L4_GPUS: Limit 16.0, Current 0.0",
+        "Must enforce read-only diagnostic boundary",
+        "Must propose human-in-the-loop remediation"
+      ]
+    },
+    {
+      "id": "EVAL-12-NEGATIVE",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "CPUS quota in us-central1 has limit 1000 and usage 200. Is CPU quota exceeded?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025"
+      },
+      "expected_tools": [
+        "gcloud compute regions describe --format=json"
+      ],
+      "expected_findings": {
+        "failure_detected": false,
+        "action_required": false
+      },
+      "passing_criteria": [
+        "Must verify normal baseline parameters",
+        "Must NOT trigger disruptive mutation workflow"
+      ]
+    }
+  ]
+}
