@@ -2,52 +2,79 @@
   "eval_version": "1.0.0",
   "skill": "gke-pvc-binding-troubleshooting",
   "pantheon_surface": "Workload Storage (POD_HAS_UNBOUND_IMMEDIATE_PVC)",
-  "legacy_runbook": "gke_storage_unbound_pvc",
+  "legacy_runbook": "gke_pvc_binding_observer",
   "evaluations": [
     {
-      "id": "EVAL-07-POSITIVE",
+      "id": "EVAL-gke-pvc-binding-troubleshooting-01",
       "name": "positive_incident_detection",
       "type": "positive_failure",
-      "input_prompt": "PVC test-unbound-pvc is stuck in Pending state in namespace gke-skills-sandbox. Identify why volume provisioning failed.",
+      "input_prompt": "PersistentVolumeClaim test-unbound-pvc in namespace gke-skills-sandbox is stuck in Pending. Diagnose storage provisioner failure.",
       "context": {
         "cluster": "dbs-mgmt-primary",
         "project": "gca-gke-2025",
+        "namespace": "gke-skills-sandbox",
         "target": "test-unbound-pvc"
       },
       "expected_tools": [
-        "kubectl get pvc",
-        "kubectl get sc",
-        "kubectl describe pvc"
+        "kubectl get pvc -n gke-skills-sandbox test-unbound-pvc -o wide",
+        "kubectl describe pvc -n gke-skills-sandbox test-unbound-pvc",
+        "kubectl get storageclass"
       ],
       "expected_findings": {
-        "pvc_phase": "Pending",
-        "missing_sc": "non-existent-test-storage-class"
+        "root_cause": "PVC references a non-existent StorageClass, preventing GCE PD CSI driver from provisioning the backing disk.",
+        "remediation": "Update PVC manifest to reference valid cluster StorageClass (`storageClassName: standard-rwo`)."
       },
       "passing_criteria": [
-        "Must detect Phase: Pending on test-unbound-pvc",
-        "Must enforce read-only diagnostic boundary",
-        "Must propose human-in-the-loop remediation"
+        "Must identify StorageClass not found provisioner event",
+        "Must list available cluster StorageClasses",
+        "Must formulate declarative GitOps patch specifying standard-rwo"
       ]
     },
     {
-      "id": "EVAL-07-NEGATIVE",
-      "name": "benign_condition_guardrail",
-      "type": "negative_guardrail",
-      "input_prompt": "PVC data-disk is bound to standard-rwo storage class. Is there an unbound PVC issue?",
+      "id": "EVAL-gke-pvc-binding-troubleshooting-02",
+      "name": "complex_edge_case_and_handoff",
+      "type": "complex_edge_case",
+      "input_prompt": "PVC db-data-pvc using StorageClass standard-rwo is Pending. Determine if the storage provisioner is broken.",
       "context": {
         "cluster": "dbs-mgmt-primary",
-        "project": "gca-gke-2025"
+        "project": "gca-gke-2025",
+        "target": "db-data-pvc"
       },
       "expected_tools": [
-        "kubectl get pvc"
+        "kubectl describe pvc db-data-pvc -n gke-skills-sandbox",
+        "kubectl describe sc standard-rwo"
       ],
       "expected_findings": {
-        "failure_detected": false,
+        "correlation": "Differentiates actual provisioning failure from normal `WaitForFirstConsumer` binding mode awaiting pod placement.",
+        "decision": "Identifies that PVC will bind automatically once consuming pod is scheduled in a specific zone. Explains delayed binding and takes zero disruptive actions."
+      },
+      "passing_criteria": [
+        "Must inspect StorageClass volumeBindingMode",
+        "Must recognize WaitForFirstConsumer lifecycle behavior",
+        "Must avoid false-positive error alerts when awaiting consumer pod"
+      ]
+    },
+    {
+      "id": "EVAL-gke-pvc-binding-troubleshooting-03",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "PersistentVolumeClaim app-cache-pvc in namespace production is Bound. Does it have volume binding issues?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "app-cache-pvc"
+      },
+      "expected_tools": [
+        "kubectl get pvc app-cache-pvc -n production"
+      ],
+      "expected_findings": {
+        "behavior": "Observes Status: Bound, volume name populated, capacity allocated. Confirms healthy volume binding; zero mutations.",
         "action_required": false
       },
       "passing_criteria": [
-        "Must verify normal baseline parameters",
-        "Must NOT trigger disruptive mutation workflow"
+        "Must verify PVC status is Bound",
+        "Must confirm backing PV association",
+        "Zero false-positive alerts"
       ]
     }
   ]
