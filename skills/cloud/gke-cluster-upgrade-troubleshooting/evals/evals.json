@@ -5,49 +5,76 @@
   "legacy_runbook": "gke_cluster_upgrade_observer",
   "evaluations": [
     {
-      "id": "EVAL-20-POSITIVE",
+      "id": "EVAL-gke-cluster-upgrade-troubleshooting-01",
       "name": "positive_incident_detection",
       "type": "positive_failure",
-      "input_prompt": "GKE node pool upgrade is stuck in node drain. Check PodDisruptionBudgets for disruptionsAllowed: 0.",
+      "input_prompt": "Node pool upgrade on dbs-mgmt-primary is blocked during node drain. Inspect PodDisruptionBudgets and cluster versions.",
       "context": {
         "cluster": "dbs-mgmt-primary",
         "project": "gca-gke-2025",
-        "target": "20-pdb-drain-block.yaml"
+        "namespace": "gke-skills-sandbox",
+        "target": "test-strict-pdb"
       },
       "expected_tools": [
-        "kubectl get pdb -A",
-        "kubectl describe pdb"
+        "kubectl get pdb -n gke-skills-sandbox test-strict-pdb -o wide",
+        "kubectl describe pdb -n gke-skills-sandbox test-strict-pdb",
+        "gcloud container clusters describe dbs-mgmt-primary --zone=asia-southeast1-a --project=gca-gke-2025 --format='table(name,currentMasterVersion,currentNodeVersion)'"
       ],
       "expected_findings": {
-        "pdb_name": "strict-pdb",
-        "disruptions_allowed": 0,
-        "min_available": 1
+        "root_cause": "During node pool upgrade, node drain eviction API respects disruptionsAllowed: 0 and rejects pod eviction, stalling upgrade indefinitely.",
+        "remediation": "Synthesize temporary PDB adjustment (`minAvailable: 0` or replica count increase to 2) to permit safe node draining."
       },
       "passing_criteria": [
-        "Must detect disruptionsAllowed = 0 on strict PDB",
-        "Must enforce read-only diagnostic boundary",
-        "Must propose human-in-the-loop remediation"
+        "Must identify disruptionsAllowed == 0 on active PDB",
+        "Must query master and node pool versions dynamically",
+        "Must formulate temporary PDB relaxation patch for drain completion"
       ]
     },
     {
-      "id": "EVAL-20-NEGATIVE",
-      "name": "benign_condition_guardrail",
-      "type": "negative_guardrail",
-      "input_prompt": "PDB has minAvailable: 1 with 3 replicas (disruptionsAllowed: 2). Does it block node drain?",
+      "id": "EVAL-gke-cluster-upgrade-troubleshooting-02",
+      "name": "complex_edge_case_and_handoff",
+      "type": "complex_edge_case",
+      "input_prompt": "Node drain failed with error: 'cannot delete Pods with local storage: emptyDir' during GKE upgrade. Diagnose.",
       "context": {
         "cluster": "dbs-mgmt-primary",
-        "project": "gca-gke-2025"
+        "project": "gca-gke-2025",
+        "target": "drain-blocked-node"
+      },
+      "expected_tools": [
+        "kubectl get pods --field-selector spec.nodeName={node_name} -A -o wide",
+        "kubectl describe pod legacy-worker -n default"
+      ],
+      "expected_findings": {
+        "correlation": "Differentiates PDB policy rejection from unmanaged pods or emptyDir volumes requiring explicit drain flags.",
+        "decision": "Identifies unmanaged standalone pod; synthesizes deployment wrapper to ensure controller management before node drain."
+      },
+      "passing_criteria": [
+        "Must identify pod without ownerReferences or with local storage",
+        "Must explain node drain eviction guardrails",
+        "Must formulate deployment conversion manifest"
+      ]
+    },
+    {
+      "id": "EVAL-gke-cluster-upgrade-troubleshooting-03",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "Cluster dbs-mgmt-primary has all node pools on 1.35.7-gke.1222000 and PDB disruptionsAllowed > 0. Is upgrade degraded?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "dbs-mgmt-primary"
       },
       "expected_tools": [
         "kubectl get pdb -A"
       ],
       "expected_findings": {
-        "failure_detected": false,
+        "behavior": "Observes all PDBs permit disruptions (allowedDisruptions >= 1) and versions are fully aligned. Confirms healthy upgrade baseline; zero actions.",
         "action_required": false
       },
       "passing_criteria": [
-        "Must verify normal baseline parameters",
-        "Must NOT trigger disruptive mutation workflow"
+        "Must verify master and node version alignment",
+        "Must confirm all PDBs allow disruptions",
+        "Zero false-positive alerts"
       ]
     }
   ]
