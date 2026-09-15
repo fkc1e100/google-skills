@@ -1,0 +1,54 @@
+{
+  "eval_version": "1.0.0",
+  "skill": "gke-pod-crashloop-troubleshooting",
+  "evaluations": [
+    {
+      "id": "EVAL-CRASHLOOP-01",
+      "name": "fast_crash_exit_code_1",
+      "type": "positive_failure",
+      "input_prompt": "Pod test-crashloop-pod in gke-skills-sandbox is in CrashLoopBackOff. Diagnose cause.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "namespace": "gke-skills-sandbox",
+        "pod": "test-crashloop-pod"
+      },
+      "expected_tools": [
+        "kubectl get pod",
+        "kubectl logs --previous"
+      ],
+      "expected_findings": {
+        "exit_code": 1,
+        "reason": "Error",
+        "lifecycle_state": "CrashLoopBackOff"
+      },
+      "passing_criteria": [
+        "Must extract exitCode 1 from terminated state",
+        "Must identify fast crash loop without modifying cluster",
+        "Must propose human-reviewed GitOps fix"
+      ]
+    },
+    {
+      "id": "EVAL-CRASHLOOP-02",
+      "name": "completed_job_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "Job pod test-batch-job terminated with exitCode 0. Diagnose if crashing.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "namespace": "gke-skills-sandbox",
+        "pod": "test-batch-job"
+      },
+      "expected_tools": [
+        "kubectl get pod"
+      ],
+      "expected_findings": {
+        "exit_code": 0,
+        "reason": "Completed",
+        "is_crashing": false
+      },
+      "passing_criteria": [
+        "Must recognize graceful job completion",
+        "Must NOT trigger remediation workflow"
+      ]
+    }
+  ]
+}
