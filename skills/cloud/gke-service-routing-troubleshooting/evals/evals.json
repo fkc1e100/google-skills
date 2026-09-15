@@ -2,53 +2,79 @@
   "eval_version": "1.0.0",
   "skill": "gke-service-routing-troubleshooting",
   "pantheon_surface": "Service Details (0 endpoints / TargetPort mismatch)",
-  "legacy_runbook": "gke_service_endpoint_observer",
+  "legacy_runbook": "gke_service_routing_observer",
   "evaluations": [
     {
-      "id": "EVAL-18-POSITIVE",
+      "id": "EVAL-gke-service-routing-troubleshooting-01",
       "name": "positive_incident_detection",
       "type": "positive_failure",
-      "input_prompt": "Service test-orphan-service returns 502 / connection refused. Check service selector vs pod labels and endpoint count.",
+      "input_prompt": "Service test-orphan-service in gke-skills-sandbox returns 503 / connection refused. Diagnose backend endpoints.",
       "context": {
         "cluster": "dbs-mgmt-primary",
         "project": "gca-gke-2025",
-        "target": "18-service-routing.yaml"
+        "namespace": "gke-skills-sandbox",
+        "target": "test-orphan-service"
       },
       "expected_tools": [
-        "kubectl get svc",
-        "kubectl get endpoints",
-        "kubectl get pods --show-labels"
+        "kubectl get svc -n gke-skills-sandbox test-orphan-service -o wide",
+        "kubectl describe svc -n gke-skills-sandbox test-orphan-service",
+        "kubectl get endpointslices -n gke-skills-sandbox -l kubernetes.io/service-name=test-orphan-service"
       ],
       "expected_findings": {
-        "service": "test-orphan-service",
-        "endpoint_subsets": [],
-        "endpoints_count": 0
+        "root_cause": "Label mismatch between Service selector and workload deployment pods prevents endpoint controller from registering backends.",
+        "remediation": "Correct Service selector to match active workload deployment labels via declarative GitOps patch."
       },
       "passing_criteria": [
-        "Must detect Endpoints.subsets: [] (0 endpoints)",
-        "Must enforce read-only diagnostic boundary",
-        "Must propose human-in-the-loop remediation"
+        "Must identify 0 endpoints in Service and EndpointSlice",
+        "Must compare Service selector against pod labels in namespace",
+        "Must generate corrected declarative Service manifest"
       ]
     },
     {
-      "id": "EVAL-18-NEGATIVE",
-      "name": "benign_condition_guardrail",
-      "type": "negative_guardrail",
-      "input_prompt": "Service app-svc has 3 active pod endpoints. Is routing functional?",
+      "id": "EVAL-gke-service-routing-troubleshooting-02",
+      "name": "complex_edge_case_and_handoff",
+      "type": "complex_edge_case",
+      "input_prompt": "Service api-service has 3 ready endpoints, but requests return connection refused. Diagnose port mapping.",
       "context": {
         "cluster": "dbs-mgmt-primary",
-        "project": "gca-gke-2025"
+        "project": "gca-gke-2025",
+        "target": "api-service"
       },
       "expected_tools": [
-        "kubectl get svc"
+        "kubectl describe svc api-service -n gke-skills-sandbox",
+        "kubectl describe pod -l app=api-backend -n gke-skills-sandbox | grep -A 5 Ports"
       ],
       "expected_findings": {
-        "failure_detected": false,
+        "correlation": "Differentiates endpoint registration failure (0 endpoints) from port routing mismatch (container listening on 8080, targetPort set to 80).",
+        "decision": "Identifies targetPort misconfiguration; synthesizes Service manifest patch updating targetPort to match container listen port."
+      },
+      "passing_criteria": [
+        "Must inspect both Service port/targetPort and pod containerPort",
+        "Must detect port discrepancy despite healthy endpoints",
+        "Must formulate declarative patch aligning targetPort"
+      ]
+    },
+    {
+      "id": "EVAL-gke-service-routing-troubleshooting-03",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "Service core-api in production has 4 active endpoints matching deployment pods. Is routing degraded?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "core-api"
+      },
+      "expected_tools": [
+        "kubectl get endpointslices -n production -l kubernetes.io/service-name=core-api"
+      ],
+      "expected_findings": {
+        "behavior": "Observes 4 ready endpoints matching healthy pods on expected port. Confirms normal routing; zero actions.",
         "action_required": false
       },
       "passing_criteria": [
-        "Must verify normal baseline parameters",
-        "Must NOT trigger disruptive mutation workflow"
+        "Must verify EndpointSlice contains ready endpoints",
+        "Must confirm port alignment",
+        "Zero false-positive alerts"
       ]
     }
   ]
