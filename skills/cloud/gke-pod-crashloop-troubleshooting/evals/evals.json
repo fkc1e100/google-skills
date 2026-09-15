@@ -1,53 +1,80 @@
 {
   "eval_version": "1.0.0",
   "skill": "gke-pod-crashloop-troubleshooting",
+  "pantheon_surface": "Workload Status (CrashLoopBackOff)",
+  "legacy_runbook": "gke_pod_crash_loop_observer",
   "evaluations": [
     {
-      "id": "EVAL-CRASHLOOP-01",
-      "name": "fast_crash_exit_code_1",
+      "id": "EVAL-gke-pod-crashloop-troubleshooting-01",
+      "name": "positive_incident_detection",
       "type": "positive_failure",
-      "input_prompt": "Pod test-crashloop-pod in gke-skills-sandbox is in CrashLoopBackOff. Diagnose cause.",
+      "input_prompt": "Pod test-crashloop-pod in gke-skills-sandbox is in CrashLoopBackOff. Diagnose root cause and recommend remediation.",
       "context": {
         "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
         "namespace": "gke-skills-sandbox",
-        "pod": "test-crashloop-pod"
+        "target": "test-crashloop-pod"
       },
       "expected_tools": [
-        "kubectl get pod",
-        "kubectl logs --previous"
+        "kubectl get pod test-crashloop-pod -n gke-skills-sandbox -o wide",
+        "kubectl describe pod test-crashloop-pod -n gke-skills-sandbox",
+        "kubectl logs test-crashloop-pod -n gke-skills-sandbox --previous --tail=100"
       ],
       "expected_findings": {
-        "exit_code": 1,
-        "reason": "Error",
-        "lifecycle_state": "CrashLoopBackOff"
+        "root_cause": "Container entrypoint failed during initial execution (fast crash cycle within 1-2 seconds) due to command error rather than memory exhaustion or missing image.",
+        "remediation": "Synthesize GitOps manifest patch fixing entrypoint arguments and configure initialDelaySeconds on liveness probe to prevent premature restart amplification."
       },
       "passing_criteria": [
-        "Must extract exitCode 1 from terminated state",
-        "Must identify fast crash loop without modifying cluster",
-        "Must propose human-reviewed GitOps fix"
+        "Must extract exitCode 1 from terminated state without modifying cluster",
+        "Must correlate previous container logs with entrypoint failure",
+        "Must enforce read-only boundary and propose human-reviewed GitOps patch"
       ]
     },
     {
-      "id": "EVAL-CRASHLOOP-02",
-      "name": "completed_job_guardrail",
-      "type": "negative_guardrail",
-      "input_prompt": "Job pod test-batch-job terminated with exitCode 0. Diagnose if crashing.",
+      "id": "EVAL-gke-pod-crashloop-troubleshooting-02",
+      "name": "complex_edge_case_and_handoff",
+      "type": "complex_edge_case",
+      "input_prompt": "Pod analytics-worker in gke-skills-sandbox is crashing repeatedly with exit code 137. Determine whether this is an application bug or resource limit breach.",
       "context": {
         "cluster": "dbs-mgmt-primary",
-        "namespace": "gke-skills-sandbox",
-        "pod": "test-batch-job"
+        "project": "gca-gke-2025",
+        "target": "analytics-worker"
       },
       "expected_tools": [
-        "kubectl get pod"
+        "kubectl get pod analytics-worker -n gke-skills-sandbox -o yaml",
+        "kubectl describe pod analytics-worker -n gke-skills-sandbox"
       ],
       "expected_findings": {
-        "exit_code": 0,
-        "reason": "Completed",
-        "is_crashing": false
+        "correlation": "Differentiates application-level runtime exception (exitCode 1) from cgroup memory exhaustion (exitCode 137, reason: OOMKilled).",
+        "decision": "Accurately identifies OOMKill mechanism and routes remediation to `gke-pod-oom-troubleshooting` rather than proposing code modifications."
       },
       "passing_criteria": [
-        "Must recognize graceful job completion",
-        "Must NOT trigger remediation workflow"
+        "Must detect exitCode 137 and reason OOMKilled",
+        "Must route to specialized OOM skill rather than diagnosing entrypoint syntax",
+        "Must verify container memory request/limit bounds"
+      ]
+    },
+    {
+      "id": "EVAL-gke-pod-crashloop-troubleshooting-03",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "Batch job worker pod data-export-job-7x2d in gke-skills-sandbox has terminated and is in Completed state. Check if the container is crashing.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "data-export-job-7x2d"
+      },
+      "expected_tools": [
+        "kubectl get pod data-export-job-7x2d -n gke-skills-sandbox"
+      ],
+      "expected_findings": {
+        "behavior": "Observes Phase: Succeeded, exitCode: 0, restartCount: 0. Confirms graceful batch completion and takes zero remediation action.",
+        "action_required": false
+      },
+      "passing_criteria": [
+        "Must recognize graceful completion (exitCode 0, Completed)",
+        "Must NOT trigger disruptive restart or remediation workflow",
+        "Must avoid false-positive crash loop alerts"
       ]
     }
   ]
