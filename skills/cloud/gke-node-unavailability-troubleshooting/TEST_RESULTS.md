@@ -5,7 +5,7 @@
 **Namespace:** `gke-skills-sandbox`  
 **Test Harness:** `tests/run_and_record_full_traces.py`  
 **Status:** **PASS** (100% Diagnostic Verification)  
-**Date:** September 14, 2026  
+**Date:** September 15, 2026  
 
 ---
 
@@ -71,38 +71,39 @@ The following complete execution trace was captured during automated end-to-end 
 ```text
 $ kubectl --context=dbs-mgmt-primary get leases -n kube-node-lease -o wide
 NAME                                              HOLDER                                            AGE
-gke-dbs-mgmt-primary-gpu-pool-98cd300e-pd5g       gke-dbs-mgmt-primary-gpu-pool-98cd300e-pd5g       36m
-gke-dbs-mgmt-primary-primary-pool-d994c2a3-2o5t   gke-dbs-mgmt-primary-primary-pool-d994c2a3-2o5t   2d17h
+gke-dbs-mgmt-primary-gpu-pool-98cd300e-pd5g       gke-dbs-mgmt-primary-gpu-pool-98cd300e-pd5g       56m
+gke-dbs-mgmt-primary-primary-pool-d994c2a3-2o5t   gke-dbs-mgmt-primary-primary-pool-d994c2a3-2o5t   2d18h
 gke-dbs-mgmt-primary-primary-pool-d994c2a3-irgf   gke-dbs-mgmt-primary-primary-pool-d994c2a3-irgf   2d18h
-gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi   gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi   2d17h
+gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi   gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi   2d18h
 
-$ kubectl --context=dbs-mgmt-primary describe lease -n kube-node-lease gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
-Name:         gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
+$ kubectl --context=dbs-mgmt-primary describe lease -n kube-node-lease gke-dbs-mgmt-primary-primary-pool-d994c2a3-2o5t
+Name:         gke-dbs-mgmt-primary-primary-pool-d994c2a3-2o5t
 Namespace:    kube-node-lease
 Labels:       <none>
 Annotations:  <none>
 API Version:  coordination.k8s.io/v1
 Kind:         Lease
 Metadata:
-  Creation Timestamp:  2026-09-12T10:13:56Z
+  Creation Timestamp:  2026-09-12T10:08:59Z
   Owner References:
     API Version:     v1
     Kind:            Node
-    Name:            gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
-    UID:             4907e1bc-830f-41e9-b88e-42cb014a4466
-  Resource Version:  1789445179127327023
-  UID:               1c795401-24ed-4d5f-867a-585b793bdcf9
+    Name:            gke-dbs-mgmt-primary-primary-pool-d994c2a3-2o5t
+    UID:             9280aa03-a6c0-475b-80f2-0bf8319c7327
+  Resource Version:  1789446383734767023
+  UID:               8f4b09fb-7d43-44e9-beb2-172f65b2cd18
 Spec:
-  Holder Identity:         gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
+  Holder Identity:         gke-dbs-mgmt-primary-primary-pool-d994c2a3-2o5t
   Lease Duration Seconds:  40
-  Renew Time:              2026-09-15T04:06:19.109141Z
+  Renew Time:              2026-09-15T04:26:23.662272Z
 Events:                    <none>
 ```
 
 ### Automated Diagnostic Evaluation Trace
 1. **Telemetry Ingestion**:
    - Namespace: `kube-node-lease`
-   - Active NodeLease Objects: 4 active leases corresponding to cluster node instances.
+   - Target Lease: `gke-dbs-mgmt-primary-primary-pool-d994c2a3-2o5t`
+   - Active NodeLease Objects: Active leases corresponding to all cluster node instances.
    - Lease Duration: 40 seconds; Renewal Period: 10 seconds.
    - RenewTime Timestamps: Current and continuously updating.
 
