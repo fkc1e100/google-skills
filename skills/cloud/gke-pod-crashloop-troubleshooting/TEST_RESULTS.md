@@ -5,7 +5,7 @@
 **Namespace:** `gke-skills-sandbox`  
 **Test Harness:** `tests/run_and_record_full_traces.py`  
 **Status:** **PASS** (100% Diagnostic Verification)  
-**Date:** September 14, 2026  
+**Date:** September 15, 2026  
 
 ---
 
@@ -72,28 +72,28 @@ The following complete execution trace was captured during automated end-to-end 
 ```text
 $ kubectl --context=dbs-mgmt-primary get pods -n gke-skills-sandbox -l app=test-crashloop-app -o wide
 NAME                                  READY   STATUS             RESTARTS     AGE   IP            NODE                                              NOMINATED NODE   READINESS GATES
-test-crashloop-app-57b59bf558-dxggx   0/1     CrashLoopBackOff   1 (4s ago)   9s    10.101.0.45   gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi   <none>           <none>
+test-crashloop-app-57b59bf558-tg8bz   0/1     CrashLoopBackOff   1 (5s ago)   9s    10.101.0.55   gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi   <none>           <none>
 
-$ kubectl --context=dbs-mgmt-primary describe pod -n gke-skills-sandbox test-crashloop-app-57b59bf558-dxggx
-Name:             test-crashloop-app-57b59bf558-dxggx
+$ kubectl --context=dbs-mgmt-primary describe pod -n gke-skills-sandbox test-crashloop-app-57b59bf558-tg8bz
+Name:             test-crashloop-app-57b59bf558-tg8bz
 Namespace:        gke-skills-sandbox
 Priority:         0
 Service Account:  default
 Node:             gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi/10.100.0.14
-Start Time:       Tue, 15 Sep 2026 00:01:18 -0400
+Start Time:       Tue, 15 Sep 2026 00:23:22 -0400
 Labels:           app=test-crashloop-app
                   pod-template-hash=57b59bf558
                   topology.kubernetes.io/region=asia-southeast1
                   topology.kubernetes.io/zone=asia-southeast1-a
 Annotations:      <none>
 Status:           Running
-IP:               10.101.0.45
+IP:               10.101.0.55
 IPs:
-  IP:           10.101.0.45
+  IP:           10.101.0.55
 Controlled By:  ReplicaSet/test-crashloop-app-57b59bf558
 Containers:
   crashing-container:
-    Container ID:  containerd://25bc33fdbfbdae3e237eeb1aa4d3e05fcdb63d03362b7740e87f92f0bb35453b
+    Container ID:  containerd://a3a6bd8802831fe3d3e5651de95fffe44eaa32db50d03ce18e005c804a53f047
     Image:         busybox:1.36
     Image ID:      docker.io/library/busybox@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662
     Port:          <none>
@@ -108,8 +108,8 @@ Containers:
     Last State:     Terminated
       Reason:       Error
       Exit Code:    1
-      Started:      Tue, 15 Sep 2026 00:01:23 -0400
-      Finished:     Tue, 15 Sep 2026 00:01:23 -0400
+      Started:      Tue, 15 Sep 2026 00:23:26 -0400
+      Finished:     Tue, 15 Sep 2026 00:23:26 -0400
     Ready:          False
     Restart Count:  1
     Limits:
@@ -120,7 +120,7 @@ Containers:
       memory:     16Mi
     Environment:  <none>
     Mounts:
-      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-d52mw (ro)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-pmqnl (ro)
 Conditions:
   Type                        Status
   PodReadyToStartContainers   True 
@@ -129,7 +129,7 @@ Conditions:
   ContainersReady             False 
   PodScheduled                True 
 Volumes:
-  kube-api-access-d52mw:
+  kube-api-access-pmqnl:
     Type:                    Projected (a volume that contains injected data from multiple sources)
     TokenExpirationSeconds:  3607
     ConfigMapName:           kube-root-ca.crt
@@ -142,22 +142,22 @@ Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists fo
 Events:
   Type     Reason     Age              From               Message
   ----     ------     ----             ----               -------
-  Normal   Scheduled  11s              default-scheduler  Successfully assigned gke-skills-sandbox/test-crashloop-app-57b59bf558-dxggx to gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
-  Normal   Pulled     7s (x2 over 8s)  kubelet            spec.containers{crashing-container}: Container image "busybox:1.36" already present on machine and can be accessed by the pod
-  Normal   Created    7s (x2 over 8s)  kubelet            spec.containers{crashing-container}: Container created
-  Normal   Started    6s (x2 over 8s)  kubelet            spec.containers{crashing-container}: Container started
-  Warning  BackOff    5s (x2 over 6s)  kubelet            spec.containers{crashing-container}: Back-off restarting failed container crashing-container in pod test-crashloop-app-57b59bf558-dxggx_gke-skills-sandbox(4c310869-f369-44f2-b519-e708f1b7d045)
+  Normal   Scheduled  11s              default-scheduler  Successfully assigned gke-skills-sandbox/test-crashloop-app-57b59bf558-tg8bz to gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
+  Normal   Pulled     7s (x2 over 9s)  kubelet            spec.containers{crashing-container}: Container image "busybox:1.36" already present on machine and can be accessed by the pod
+  Normal   Created    7s (x2 over 9s)  kubelet            spec.containers{crashing-container}: Container created
+  Normal   Started    7s (x2 over 8s)  kubelet            spec.containers{crashing-container}: Container started
+  Warning  BackOff    5s (x2 over 6s)  kubelet            spec.containers{crashing-container}: Back-off restarting failed container crashing-container in pod test-crashloop-app-57b59bf558-tg8bz_gke-skills-sandbox(e16fed4e-af49-4d82-9bc3-1b4712f20285)
 
-$ kubectl --context=dbs-mgmt-primary logs -n gke-skills-sandbox test-crashloop-app-57b59bf558-dxggx --previous --tail=20
+$ kubectl --context=dbs-mgmt-primary logs -n gke-skills-sandbox test-crashloop-app-57b59bf558-tg8bz --previous --tail=20
 Starting and failing immediately...
 
-$ kubectl --context=dbs-mgmt-primary get events -n gke-skills-sandbox --field-selector involvedObject.name=test-crashloop-app-57b59bf558-dxggx
+$ kubectl --context=dbs-mgmt-primary get events -n gke-skills-sandbox --field-selector involvedObject.name=test-crashloop-app-57b59bf558-tg8bz
 LAST SEEN   TYPE      REASON      OBJECT                                    MESSAGE
-14s         Normal    Scheduled   pod/test-crashloop-app-57b59bf558-dxggx   Successfully assigned gke-skills-sandbox/test-crashloop-app-57b59bf558-dxggx to gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
-10s         Normal    Pulled      pod/test-crashloop-app-57b59bf558-dxggx   Container image "busybox:1.36" already present on machine and can be accessed by the pod
-10s         Normal    Created     pod/test-crashloop-app-57b59bf558-dxggx   Container created
-9s          Normal    Started     pod/test-crashloop-app-57b59bf558-dxggx   Container started
-8s          Warning   BackOff     pod/test-crashloop-app-57b59bf558-dxggx   Back-off restarting failed container crashing-container in pod test-crashloop-app-57b59bf558-dxggx_gke-skills-sandbox(4c310869-f369-44f2-b519-e708f1b7d045)
+13s         Normal    Scheduled   pod/test-crashloop-app-57b59bf558-tg8bz   Successfully assigned gke-skills-sandbox/test-crashloop-app-57b59bf558-tg8bz to gke-dbs-mgmt-primary-primary-pool-d994c2a3-pdsi
+9s          Normal    Pulled      pod/test-crashloop-app-57b59bf558-tg8bz   Container image "busybox:1.36" already present on machine and can be accessed by the pod
+9s          Normal    Created     pod/test-crashloop-app-57b59bf558-tg8bz   Container created
+9s          Normal    Started     pod/test-crashloop-app-57b59bf558-tg8bz   Container started
+7s          Warning   BackOff     pod/test-crashloop-app-57b59bf558-tg8bz   Back-off restarting failed container crashing-container in pod test-crashloop-app-57b59bf558-tg8bz_gke-skills-sandbox(e16fed4e-af49-4d82-9bc3-1b4712f20285)
 ```
 
 ### Automated Diagnostic Evaluation Trace
@@ -170,7 +170,7 @@ LAST SEEN   TYPE      REASON      OBJECT                                    MESS
 
 2. **Root Cause Isolation**:
    - Container process executes an immediate non-zero exit command (`exit 1`) during entrypoint execution.
-   - Identified application startup failure rather than OOMKill (cgroup memory within 16Mi/32Mi bounds) or missing image.
+   - Identified application startup failure rather than OOMKill (cgroup memory within bounds) or missing image.
 
 3. **Actionable Remediation**:
    - Synthesized corrected entrypoint command without deliberate exit 1.
