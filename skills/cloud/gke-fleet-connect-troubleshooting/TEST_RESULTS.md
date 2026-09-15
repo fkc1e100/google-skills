@@ -5,7 +5,7 @@
 **Namespace:** `gke-skills-sandbox`  
 **Test Harness:** `tests/run_and_record_full_traces.py`  
 **Status:** **PASS** (100% Diagnostic Verification)  
-**Date:** September 14, 2026  
+**Date:** September 15, 2026  
 
 ---
 
@@ -69,56 +69,34 @@ The following complete execution trace was captured during automated end-to-end 
 $ gcloud container fleet memberships list --project=gca-gke-2025 --format='table(name,endpoint.gkeCluster.resourceLink,state.code)'
 
 
-$ kubectl --context=dbs-mgmt-primary get ns gke-connect
-Error from server (NotFound): namespaces "gke-connect" not found
+$ kubectl --context=dbs-mgmt-primary get pods -A -l app=gke-connect-agent
+No resources found
 
-$ gcloud container fleet hub list-features --project=gca-gke-2025 --format=json
-ERROR: (gcloud.container.fleet) Invalid choice: 'hub'.
-Maybe you meant:
-  gcloud container fleet features list
-  gcloud container fleet list
-  gcloud container hub features list
-  gcloud container hub list
-  gcloud container fleet fleetobservability describe
-  gcloud container fleet fleetobservability disable
-  gcloud container fleet fleetobservability enable
-  gcloud container fleet fleetobservability update
-  gcloud container hub fleetobservability describe
-  gcloud container hub fleetobservability disable
-  gcloud container fleet cloudrun
-  gcloud container fleet clusterupgrade
-  gcloud container fleet config-management
-  gcloud container fleet create
-  gcloud container fleet dataplane-v2-encryption
-  gcloud container fleet delete
-  gcloud container fleet describe
-  gcloud container fleet identity-service
-  gcloud container fleet ingress
-  gcloud container fleet memberships
-  gcloud container fleet mesh
-  gcloud container fleet multi-cluster-services
-  gcloud container fleet operations
-  gcloud container fleet packages
-  gcloud container fleet policycontroller
-  gcloud container fleet rbacrolebindingactuation
-  gcloud container fleet rollouts
-  gcloud container fleet rolloutsequences
-  gcloud container fleet scopes
-  gcloud container fleet update
-  gcloud container fleet workload-identity
+$ kubectl --context=dbs-mgmt-primary get ns -o custom-columns=NAME:.metadata.name,STATUS:.status.phase | grep -E '(gke-connect|kube-system|default)'
+default                             Active
+kube-system                         Active
 
-To search the help text of gcloud commands, run:
-  gcloud help -- SEARCH_TERMS
+$ gcloud container fleet features list --project=gca-gke-2025 --format='table(name,state.state.code)'
+NAME                          CODE
+authorizer
+configmanagement
+fleetobservability
+metering
+multiclusteringress           ERROR
+multiclusterservicediscovery  OK
+rbacrolebindingactuation
+workloadidentity
 ```
 
 ### Automated Diagnostic Evaluation Trace
 1. **Telemetry Ingestion**:
    - Fleet Hub Memberships: Queried membership registry for cluster `dbs-mgmt-primary`.
-   - GKE Connect Agent Namespace: Inspected cluster for `gke-connect` deployments.
-   - Fleet Feature State: Audited enabled multi-cluster service mesh and telemetry features.
+   - GKE Connect Agent Workload: Queried cluster-wide for `app=gke-connect-agent` pods.
+   - Cluster Namespaces: Audited namespaces; confirmed `gke-connect` namespace is not provisioned.
+   - Fleet Features State: Audited enabled fleet multi-cluster features.
 
 2. **Root Cause Isolation**:
-   - Verified that cluster is not registered with GKE Hub, accounting for absent Fleet connect agent pods.
+   - Verified that cluster is not registered with GKE Fleet Hub, accounting for absent Connect agent pods.
 
 3. **Actionable Remediation**:
    - Synthesized `gcloud container fleet memberships register` command with Workload Identity binding.
