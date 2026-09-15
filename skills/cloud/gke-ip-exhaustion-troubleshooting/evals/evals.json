@@ -2,52 +2,79 @@
   "eval_version": "1.0.0",
   "skill": "gke-ip-exhaustion-troubleshooting",
   "pantheon_surface": "Cluster Header (INVALID_IP_ADDRESS_RANGE_PATTERN)",
-  "legacy_runbook": "diagnostics.gke_ip_exhaustion",
+  "legacy_runbook": "gke_ip_exhaustion_observer",
   "evaluations": [
     {
-      "id": "EVAL-10-POSITIVE",
+      "id": "EVAL-gke-ip-exhaustion-troubleshooting-01",
       "name": "positive_incident_detection",
       "type": "positive_failure",
-      "input_prompt": "Calculate IP address allocation headroom and exhaustion risk for secondary pod range in cluster dbs-mgmt-primary.",
+      "input_prompt": "Subnet for cluster dbs-mgmt-primary reported high IP allocation. Audit subnet CIDRs and per-node pod address consumption.",
       "context": {
         "cluster": "dbs-mgmt-primary",
         "project": "gca-gke-2025",
-        "target": "Subnet Secondary CIDR Range"
+        "namespace": "gke-skills-sandbox",
+        "target": "dbs-primary-subnet-sg"
       },
       "expected_tools": [
-        "gcloud compute networks subnets describe",
-        "gcloud container clusters describe"
+        "gcloud container clusters describe dbs-mgmt-primary --zone=asia-southeast1-a --project=gca-gke-2025 --format='yaml(ipAllocationPolicy)'",
+        "gcloud compute networks subnets describe dbs-primary-subnet-sg --region=asia-southeast1 --project=gca-gke-2025 --format='table(name,ipCidrRange,secondaryIpRanges[].rangeName,secondaryIpRanges[].ipCidrRange)'",
+        "kubectl get nodes -o custom-columns=NAME:.metadata.name,INTERNAL-IP:.status.addresses[0].address,POD-CIDR:.spec.podCIDR"
       ],
       "expected_findings": {
-        "pod_cidr": "10.101.0.0/16",
-        "utilization_percent": 1.56,
-        "headroom_available": true
+        "root_cause": "Cluster possesses >98% address headroom with zero exhaustion risk; node pod CIDRs cleanly allocated from secondary range.",
+        "remediation": "Document non-disruptive secondary IP range expansion procedure using GKE multi-pod CIDRs for future cluster scaling."
       },
       "passing_criteria": [
-        "Must detect Pod CIDR Utilization: 1.56% on 10.101.0.0/16",
-        "Must enforce read-only diagnostic boundary",
-        "Must propose human-in-the-loop remediation"
+        "Must calculate accurate subnet and secondary range address capacity",
+        "Must query node pod CIDR allocations with zero syntax errors",
+        "Must differentiate VPC node IP exhaustion from Pod CIDR exhaustion"
       ]
     },
     {
-      "id": "EVAL-10-NEGATIVE",
-      "name": "benign_condition_guardrail",
-      "type": "negative_guardrail",
-      "input_prompt": "Subnet with /16 pod CIDR and 10 nodes (640 IPs allocated). Is there an IP exhaustion risk?",
+      "id": "EVAL-gke-ip-exhaustion-troubleshooting-02",
+      "name": "complex_edge_case_and_handoff",
+      "type": "complex_edge_case",
+      "input_prompt": "Cluster scaling failed with error: 'Pod CIDR range exhausted' while node instances continue to provision. Diagnose address exhaustion.",
       "context": {
         "cluster": "dbs-mgmt-primary",
-        "project": "gca-gke-2025"
+        "project": "gca-gke-2025",
+        "target": "dbs-mgmt-primary"
       },
       "expected_tools": [
-        "gcloud compute networks subnets describe"
+        "gcloud container clusters describe dbs-mgmt-primary --zone=asia-southeast1-a --format='yaml(ipAllocationPolicy)'",
+        "kubectl get nodes --no-headers | wc -l"
       ],
       "expected_findings": {
-        "failure_detected": false,
+        "correlation": "Differentiates node IP starvation in Primary Subnet from secondary Pod CIDR exhaustion caused by /24 allocation per node.",
+        "decision": "Identifies that secondary Pod range is saturated; synthesizes `gcloud container clusters update --add-additional-pod-ranges` command."
+      },
+      "passing_criteria": [
+        "Must isolate secondary Pod CIDR allocation exhaustion",
+        "Must compute remaining node capacity based on CIDR mask size",
+        "Must provide exact gcloud command for non-disruptive CIDR expansion"
+      ]
+    },
+    {
+      "id": "EVAL-gke-ip-exhaustion-troubleshooting-03",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "Subnet dbs-primary-subnet-sg has 4 active nodes in a /20 subnet. Is it at risk of IP exhaustion?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "dbs-primary-subnet-sg"
+      },
+      "expected_tools": [
+        "gcloud compute networks subnets describe dbs-primary-subnet-sg --region=asia-southeast1 --format='value(ipCidrRange)'"
+      ],
+      "expected_findings": {
+        "behavior": "Calculates 4 used out of 4096 addresses (<0.1% utilization). Confirms ample headroom; proposes zero actions.",
         "action_required": false
       },
       "passing_criteria": [
-        "Must verify normal baseline parameters",
-        "Must NOT trigger disruptive mutation workflow"
+        "Must accurately compute utilization percentage (<1%)",
+        "Must confirm absence of IP exhaustion risk",
+        "Zero false-positive alerts"
       ]
     }
   ]
