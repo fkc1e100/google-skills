@@ -1,0 +1,54 @@
+{
+  "eval_version": "1.0.0",
+  "skill": "gke-pvc-binding-troubleshooting",
+  "pantheon_surface": "Workload Storage (POD_HAS_UNBOUND_IMMEDIATE_PVC)",
+  "legacy_runbook": "gke_storage_unbound_pvc",
+  "evaluations": [
+    {
+      "id": "EVAL-07-POSITIVE",
+      "name": "positive_incident_detection",
+      "type": "positive_failure",
+      "input_prompt": "PVC test-unbound-pvc is stuck in Pending state in namespace gke-skills-sandbox. Identify why volume provisioning failed.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "test-unbound-pvc"
+      },
+      "expected_tools": [
+        "kubectl get pvc",
+        "kubectl get sc",
+        "kubectl describe pvc"
+      ],
+      "expected_findings": {
+        "pvc_phase": "Pending",
+        "missing_sc": "non-existent-test-storage-class"
+      },
+      "passing_criteria": [
+        "Must detect Phase: Pending on test-unbound-pvc",
+        "Must enforce read-only diagnostic boundary",
+        "Must propose human-in-the-loop remediation"
+      ]
+    },
+    {
+      "id": "EVAL-07-NEGATIVE",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "PVC data-disk is bound to standard-rwo storage class. Is there an unbound PVC issue?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025"
+      },
+      "expected_tools": [
+        "kubectl get pvc"
+      ],
+      "expected_findings": {
+        "failure_detected": false,
+        "action_required": false
+      },
+      "passing_criteria": [
+        "Must verify normal baseline parameters",
+        "Must NOT trigger disruptive mutation workflow"
+      ]
+    }
+  ]
+}
