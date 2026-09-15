@@ -5,7 +5,7 @@
 **Namespace:** `gke-skills-sandbox`  
 **Test Harness:** `tests/run_and_record_full_traces.py`  
 **Status:** **PASS** (100% Diagnostic Verification)  
-**Date:** September 14, 2026  
+**Date:** September 15, 2026  
 
 ---
 
@@ -85,11 +85,11 @@ Finalizers:    [kubernetes.io/pvc-protection]
 Capacity:      
 Access Modes:  
 VolumeMode:    Filesystem
-Used By:       test-pvc-app-7c7d6699bf-6rnvm
+Used By:       test-pvc-app-7c7d6699bf-9dhdr
 Events:
-  Type     Reason              Age              From                         Message
-  ----     ------              ----             ----                         -------
-  Warning  ProvisioningFailed  1s (x2 over 9s)  persistentvolume-controller  storageclass.storage.k8s.io "non-existent-test-storage-class" not found
+  Type     Reason              Age               From                         Message
+  ----     ------              ----              ----                         -------
+  Warning  ProvisioningFailed  5s (x2 over 10s)  persistentvolume-controller  storageclass.storage.k8s.io "non-existent-test-storage-class" not found
 
 $ kubectl --context=dbs-mgmt-primary get storageclass
 NAME                     PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
@@ -100,8 +100,9 @@ standard-rwo (default)   pd.csi.storage.gke.io   Delete          WaitForFirstCon
 
 $ kubectl --context=dbs-mgmt-primary get events -n gke-skills-sandbox --field-selector involvedObject.name=test-unbound-pvc
 LAST SEEN   TYPE      REASON               OBJECT                                   MESSAGE
-35m         Warning   ProvisioningFailed   persistentvolumeclaim/test-unbound-pvc   storageclass.storage.k8s.io "non-existent-test-storage-class" not found
-4s          Warning   ProvisioningFailed   persistentvolumeclaim/test-unbound-pvc   storageclass.storage.k8s.io "non-existent-test-storage-class" not found
+55m         Warning   ProvisioningFailed   persistentvolumeclaim/test-unbound-pvc   storageclass.storage.k8s.io "non-existent-test-storage-class" not found
+20m         Warning   ProvisioningFailed   persistentvolumeclaim/test-unbound-pvc   storageclass.storage.k8s.io "non-existent-test-storage-class" not found
+7s          Warning   ProvisioningFailed   persistentvolumeclaim/test-unbound-pvc   storageclass.storage.k8s.io "non-existent-test-storage-class" not found
 ```
 
 ### Automated Diagnostic Evaluation Trace
