@@ -2,51 +2,79 @@
   "eval_version": "1.0.0",
   "skill": "gke-fleet-connect-troubleshooting",
   "pantheon_surface": "Cluster Header (CLUSTER_DETAIL_REGISTRATION_ERROR)",
-  "legacy_runbook": "gke_fleet_registration_observer",
+  "legacy_runbook": "gke_fleet_connect_observer",
   "evaluations": [
     {
-      "id": "EVAL-09-POSITIVE",
+      "id": "EVAL-gke-fleet-connect-troubleshooting-01",
       "name": "positive_incident_detection",
       "type": "positive_failure",
-      "input_prompt": "Cluster dbs-mgmt-primary reports registration errors in Fleet view. Audit Fleet Hub membership and Connect Agent status.",
+      "input_prompt": "Cluster dbs-mgmt-primary has registration errors in GKE Hub. Diagnose Connect Agent deployment and membership status.",
       "context": {
         "cluster": "dbs-mgmt-primary",
         "project": "gca-gke-2025",
-        "target": "Fleet Memberships API"
+        "namespace": "gke-skills-sandbox",
+        "target": "dbs-mgmt-primary"
       },
       "expected_tools": [
-        "gcloud container fleet memberships list",
-        "kubectl get pods -n gke-connect"
+        "gcloud container fleet memberships list --project=gca-gke-2025 --format='table(name,endpoint.gkeCluster.resourceLink,state.code)'",
+        "kubectl get pods -A -l app=gke-connect-agent",
+        "kubectl get ns -o custom-columns=NAME:.metadata.name,STATUS:.status.phase | grep -E '(gke-connect|kube-system|default)'"
       ],
       "expected_findings": {
-        "memberships_count": 0,
-        "connect_agent_active": false
+        "root_cause": "Cluster dbs-mgmt-primary has not been registered with GKE Fleet Hub, accounting for absent Connect agent pods.",
+        "remediation": "Synthesize `gcloud container fleet memberships register` command with Workload Identity binding."
       },
       "passing_criteria": [
-        "Must detect memberships: 0, gke-connect ns checked",
-        "Must enforce read-only diagnostic boundary",
-        "Must propose human-in-the-loop remediation"
+        "Must query fleet memberships via gcloud API cleanly",
+        "Must verify cluster-wide connect agent pod presence",
+        "Must formulate registration command with proper IAM role bindings"
       ]
     },
     {
-      "id": "EVAL-09-NEGATIVE",
-      "name": "benign_condition_guardrail",
-      "type": "negative_guardrail",
-      "input_prompt": "Registered cluster prod-fleet has healthy connect-agent pods. Is Fleet connect working?",
+      "id": "EVAL-gke-fleet-connect-troubleshooting-02",
+      "name": "complex_edge_case_and_handoff",
+      "type": "complex_edge_case",
+      "input_prompt": "Connect agent pods in namespace gke-connect are in CrashLoopBackOff. Determine if this is a token failure or network block.",
       "context": {
         "cluster": "dbs-mgmt-primary",
-        "project": "gca-gke-2025"
+        "project": "gca-gke-2025",
+        "target": "gke-connect-agent"
       },
       "expected_tools": [
-        "gcloud container fleet memberships list"
+        "kubectl logs -n gke-connect -l app=gke-connect-agent --previous --tail=100",
+        "gcloud compute firewall-rules list --filter='network=dbs-vpc'"
       ],
       "expected_findings": {
-        "failure_detected": false,
+        "correlation": "Differentiates OAuth2 token exchange failure (`401 Unauthorized`) from egress firewall drop on TCP port 443 to `gkeconnect.googleapis.com`.",
+        "decision": "Identifies credential vs network failure domain; synthesizes Workload Identity credential refresh or firewall allow rule."
+      },
+      "passing_criteria": [
+        "Must inspect connect agent logs for exact RPC failure",
+        "Must correlate log errors with IAM service account token validity",
+        "Must propose specific firewall or IAM remedy"
+      ]
+    },
+    {
+      "id": "EVAL-gke-fleet-connect-troubleshooting-03",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "Cluster standalone-dev is not registered with Fleet Hub. Is this an operational failure?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "standalone-dev"
+      },
+      "expected_tools": [
+        "gcloud container clusters describe standalone-dev --zone=asia-southeast1-a --format='value(name,status)'"
+      ],
+      "expected_findings": {
+        "behavior": "Observes cluster Status: RUNNING. Verifies standalone mode is supported; confirms zero registration errors. Proposes zero actions.",
         "action_required": false
       },
       "passing_criteria": [
-        "Must verify normal baseline parameters",
-        "Must NOT trigger disruptive mutation workflow"
+        "Must verify cluster is operational as standalone GKE",
+        "Must NOT treat missing Fleet membership as critical error for non-fleet clusters",
+        "Zero false-positive alerts"
       ]
     }
   ]
