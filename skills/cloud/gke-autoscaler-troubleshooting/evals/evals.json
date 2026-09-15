@@ -2,50 +2,78 @@
   "eval_version": "1.0.0",
   "skill": "gke-autoscaler-troubleshooting",
   "pantheon_surface": "Node Pools (noDecisionStatus.noScaleUp)",
-  "legacy_runbook": "diagnostics.gke_ca_no_scale_up",
+  "legacy_runbook": "gke_autoscaler_observer",
   "evaluations": [
     {
-      "id": "EVAL-11-POSITIVE",
+      "id": "EVAL-gke-autoscaler-troubleshooting-01",
       "name": "positive_incident_detection",
       "type": "positive_failure",
-      "input_prompt": "Autoscaler is not scaling up node pools despite pending pods. Inspect cluster-autoscaler-status ConfigMap for noScaleUp events.",
+      "input_prompt": "Cluster Autoscaler on dbs-mgmt-primary is reporting scale-up stalls. Inspect autoscaler status configmap and node pool boundaries.",
       "context": {
         "cluster": "dbs-mgmt-primary",
         "project": "gca-gke-2025",
-        "target": "cluster-autoscaler-status ConfigMap"
+        "namespace": "gke-skills-sandbox",
+        "target": "dbs-mgmt-primary"
       },
       "expected_tools": [
-        "kubectl get cm cluster-autoscaler-status -n kube-system -o yaml"
+        "kubectl get cm -n kube-system cluster-autoscaler-status -o yaml",
+        "gcloud container clusters describe dbs-mgmt-primary --zone=asia-southeast1-a --project=gca-gke-2025 --flatten='nodePools[]' --format='table(name,nodePools.name:label=NODE_POOL,nodePools.autoscaling.enabled:label=AUTOSCALING,nodePools.autoscaling.minNodeCount:label=MIN_NODES,nodePools.autoscaling.maxNodeCount:label=MAX_NODES)'"
       ],
       "expected_findings": {
-        "autoscaler_running": true,
-        "scale_up_status": "NoActivity"
+        "root_cause": "Decoded autoscaler decision tree; verified whether scale-up stalls stem from maxNodeCount limit or unmatchable pod selectors.",
+        "remediation": "Synthesize `gcloud container clusters update --enable-autoscaling --max-nodes` command to increase capacity ceiling."
       },
       "passing_criteria": [
-        "Must detect autoscalerStatus: Running, scaleUp: NoActivity",
-        "Must enforce read-only diagnostic boundary",
-        "Must propose human-in-the-loop remediation"
+        "Must parse cluster-autoscaler-status ConfigMap cleanly",
+        "Must inspect nodePool autoscaling parameters across all pools",
+        "Must formulate exact gcloud command adjusting max-nodes"
       ]
     },
     {
-      "id": "EVAL-11-NEGATIVE",
-      "name": "benign_condition_guardrail",
-      "type": "negative_guardrail",
-      "input_prompt": "Autoscaler scaled up pool default-pool from 2 to 4 nodes in response to workload. Are there autoscaler errors?",
+      "id": "EVAL-gke-autoscaler-troubleshooting-02",
+      "name": "complex_edge_case_and_handoff",
+      "type": "complex_edge_case",
+      "input_prompt": "Cluster Autoscaler attempted scale-up but node group creation failed. Determine whether failure is quota-related or autoscaler logic.",
       "context": {
         "cluster": "dbs-mgmt-primary",
-        "project": "gca-gke-2025"
+        "project": "gca-gke-2025",
+        "target": "gpu-pool"
       },
       "expected_tools": [
-        "kubectl get cm cluster-autoscaler-status -n kube-system -o yaml"
+        "kubectl get cm -n kube-system cluster-autoscaler-status -o yaml",
+        "gcloud compute regions describe asia-southeast1 --flatten='quotas[]' --format='table(quotas.metric,quotas.usage,quotas.limit)' | grep NVIDIA"
       ],
       "expected_findings": {
-        "failure_detected": false,
+        "correlation": "Correlates autoscaler event log (`scaleUp: NoCandidates` or Cloud Provider error) with regional GPU quota saturation.",
+        "decision": "Identifies that autoscaler attempted scale-up but Compute Engine API rejected instance group resize due to quota; routes to `gcp-compute-quota-troubleshooting`."
+      },
+      "passing_criteria": [
+        "Must correlate autoscaler status with Compute Engine quota",
+        "Must distinguish GKE autoscaler policy from GCP infrastructure limit",
+        "Must recommend quota request rather than autoscaler reconfiguration"
+      ]
+    },
+    {
+      "id": "EVAL-gke-autoscaler-troubleshooting-03",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "Cluster dbs-mgmt-primary has autoscaler status Healthy and 0 pending pods. Is autoscaling degraded?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "dbs-mgmt-primary"
+      },
+      "expected_tools": [
+        "kubectl get cm -n kube-system cluster-autoscaler-status -o jsonpath='{.data.status}'"
+      ],
+      "expected_findings": {
+        "behavior": "Observes autoscalerStatus: Running, clusterWide status: Healthy, scaleUp status: NoActivity. Confirms normal state; zero actions.",
         "action_required": false
       },
       "passing_criteria": [
-        "Must verify normal baseline parameters",
-        "Must NOT trigger disruptive mutation workflow"
+        "Must verify autoscalerStatus == Running",
+        "Must confirm clusterWide health is Healthy",
+        "Zero false-positive alerts"
       ]
     }
   ]
