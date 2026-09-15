@@ -1,0 +1,81 @@
+{
+  "eval_version": "1.0.0",
+  "skill": "gke-taint-toleration-troubleshooting",
+  "pantheon_surface": "Workload Drawer (NODES_TAINTS_POD_DIDNT_TOLERATE)",
+  "legacy_runbook": "gke_taint_toleration_observer",
+  "evaluations": [
+    {
+      "id": "EVAL-gke-taint-toleration-troubleshooting-01",
+      "name": "positive_incident_detection",
+      "type": "positive_failure",
+      "input_prompt": "Pod test-taint-mismatch-app is stuck Pending with untolerated taint. Diagnose missing toleration.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "namespace": "gke-skills-sandbox",
+        "target": "test-taint-mismatch-app"
+      },
+      "expected_tools": [
+        "kubectl get pods -n gke-skills-sandbox -l app=test-taint-mismatch-app -o wide",
+        "kubectl describe pod -n gke-skills-sandbox test-taint-mismatch-app",
+        "kubectl get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints"
+      ],
+      "expected_findings": {
+        "root_cause": "Pod targets dedicated GPU pool via nodeSelector but lacks the corresponding toleration for the node taint.",
+        "remediation": "Synthesize exact `tolerations` configuration block matching node taint key, value, and NoSchedule effect."
+      },
+      "passing_criteria": [
+        "Must identify exact untolerated taint on target nodes",
+        "Must inspect pod tolerations array and identify missing key",
+        "Must formulate declarative GitOps toleration block"
+      ]
+    },
+    {
+      "id": "EVAL-gke-taint-toleration-troubleshooting-02",
+      "name": "complex_edge_case_and_handoff",
+      "type": "complex_edge_case",
+      "input_prompt": "Pod monitoring-daemon has toleration for key dedicated=infra with effect NoExecute, but node has effect NoSchedule. Diagnose why pod is rejected.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "monitoring-daemon"
+      },
+      "expected_tools": [
+        "kubectl get pod monitoring-daemon -o jsonpath='{.spec.tolerations}'",
+        "kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{\": \"}{.spec.taints}{\"\\n\"}{end}'"
+      ],
+      "expected_findings": {
+        "correlation": "Evaluates exact Kubernetes taint-toleration matching semantics (key, operator, value, effect).",
+        "decision": "Isolates effect mismatch (NoExecute does not match NoSchedule taint) and provides corrected toleration spec."
+      },
+      "passing_criteria": [
+        "Must detect effect mismatch between taint and toleration",
+        "Must explain Kubernetes taint matching algorithm constraint",
+        "Must formulate exact GitOps patch for toleration effect"
+      ]
+    },
+    {
+      "id": "EVAL-gke-taint-toleration-troubleshooting-03",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "Pod gpu-inference-worker with toleration for nvidia.com/gpu:NoSchedule is Running on gpu-pool. Is it violating taints?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "gpu-inference-worker"
+      },
+      "expected_tools": [
+        "kubectl get pod gpu-inference-worker -o wide"
+      ],
+      "expected_findings": {
+        "behavior": "Observes toleration matches node taint; pod placed on GPU node and running cleanly. Confirms healthy placement; zero actions.",
+        "action_required": false
+      },
+      "passing_criteria": [
+        "Must verify toleration matches taint correctly",
+        "Must verify pod running on expected node pool",
+        "Zero false-positive alerts"
+      ]
+    }
+  ]
+}

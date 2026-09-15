@@ -1,0 +1,81 @@
+{
+  "eval_version": "1.0.0",
+  "skill": "gke-pvc-notfound-troubleshooting",
+  "pantheon_surface": "Workload Storage (PVC_NOT_FOUND)",
+  "legacy_runbook": "gke_pvc_notfound_observer",
+  "evaluations": [
+    {
+      "id": "EVAL-gke-pvc-notfound-troubleshooting-01",
+      "name": "positive_incident_detection",
+      "type": "positive_failure",
+      "input_prompt": "Pod test-pvc-notfound-app in gke-skills-sandbox fails to start with FailedMount error. Diagnose missing PVC.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "namespace": "gke-skills-sandbox",
+        "target": "test-pvc-notfound-app"
+      },
+      "expected_tools": [
+        "kubectl get pods -n gke-skills-sandbox -l app=test-pvc-notfound-app -o wide",
+        "kubectl describe pod -n gke-skills-sandbox test-pvc-notfound-app",
+        "kubectl get pvc -n gke-skills-sandbox"
+      ],
+      "expected_findings": {
+        "root_cause": "Pod references PersistentVolumeClaim ghost-pvc-claim-missing which has never been provisioned in namespace.",
+        "remediation": "Synthesize complete declarative PersistentVolumeClaim manifest to satisfy the volume attachment dependency."
+      },
+      "passing_criteria": [
+        "Must extract FailedMount event with exact missing claim name",
+        "Must verify absence of PVC in pod namespace",
+        "Must generate complete PVC manifest ready for GitOps review"
+      ]
+    },
+    {
+      "id": "EVAL-gke-pvc-notfound-troubleshooting-02",
+      "name": "complex_edge_case_and_handoff",
+      "type": "complex_edge_case",
+      "input_prompt": "Pod worker-service in namespace processing is stuck in FailedMount for claim shared-storage-pvc, but PVC exists in default namespace. Diagnose.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "worker-service"
+      },
+      "expected_tools": [
+        "kubectl describe pod worker-service -n processing",
+        "kubectl get pvc -A | grep shared-storage-pvc"
+      ],
+      "expected_findings": {
+        "correlation": "Differentiates completely missing PVC from namespace boundary isolation (Kubernetes PVCs cannot cross namespaces).",
+        "decision": "Explains Kubernetes namespace scoping constraint and generates PVC manifest for target namespace `processing`."
+      },
+      "passing_criteria": [
+        "Must locate PVC in alternate namespace",
+        "Must articulate namespace scoping constraint to operator",
+        "Must generate duplicate PVC in target namespace"
+      ]
+    },
+    {
+      "id": "EVAL-gke-pvc-notfound-troubleshooting-03",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "Pod log-collector mounting PVC collector-storage in namespace logging is Running. Are there mount errors?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "log-collector"
+      },
+      "expected_tools": [
+        "kubectl get pod log-collector -n logging -o jsonpath='{.spec.volumes}'"
+      ],
+      "expected_findings": {
+        "behavior": "Observes pod status Running, volumes mounted cleanly, PVC exists in same namespace. Confirms normal state; zero actions.",
+        "action_required": false
+      },
+      "passing_criteria": [
+        "Must verify PVC exists and is Bound",
+        "Must confirm pod volume mount succeeded",
+        "Zero false-positive alerts"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "eval_version": "1.0.0",
+  "skill": "gke-control-plane-health",
+  "pantheon_surface": "Cluster Header (buildUnknownConditionMessage)",
+  "legacy_runbook": "gke_control_plane_observer",
+  "evaluations": [
+    {
+      "id": "EVAL-gke-control-plane-health-01",
+      "name": "positive_incident_detection",
+      "type": "positive_failure",
+      "input_prompt": "GKE cluster dbs-mgmt-primary control plane status is degraded. Check apiserver readiness probes and master endpoints.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "namespace": "gke-skills-sandbox",
+        "target": "dbs-mgmt-primary"
+      },
+      "expected_tools": [
+        "kubectl get --raw '/readyz?verbose'",
+        "kubectl get --raw '/livez?verbose'",
+        "gcloud container clusters describe dbs-mgmt-primary --zone=asia-southeast1-a --project=gca-gke-2025 --format='table(name,status,currentNodeCount,endpoint)'"
+      ],
+      "expected_findings": {
+        "root_cause": "Comprehensive audit verified that control plane components are fully synchronized and healthy.",
+        "remediation": "Confirmed healthy baseline; established monitoring alerts on webhook latency and readyz probe failures."
+      },
+      "passing_criteria": [
+        "Must query /readyz and /livez probes via raw Kubernetes API",
+        "Must inspect etcd and informer sync health status",
+        "Must verify cluster master status via gcloud API"
+      ]
+    },
+    {
+      "id": "EVAL-gke-control-plane-health-02",
+      "name": "complex_edge_case_and_handoff",
+      "type": "complex_edge_case",
+      "input_prompt": "Kubectl commands are timing out with error: 'Internal error occurred: failed calling webhook'. Diagnose admission controller.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "validating-webhook-configuration"
+      },
+      "expected_tools": [
+        "kubectl get validatingwebhookconfigurations -o wide",
+        "kubectl get mutatingwebhookconfigurations -o wide"
+      ],
+      "expected_findings": {
+        "correlation": "Differentiates core API server / etcd failure from misconfigured external admission webhook with `failurePolicy: Fail`.",
+        "decision": "Identifies unreachable webhook endpoint causing request drops; synthesizes patch switching `failurePolicy: Ignore` or repairing webhook backend."
+      },
+      "passing_criteria": [
+        "Must inspect validating/mutating webhook configurations",
+        "Must identify webhook timeout and failurePolicy",
+        "Must formulate emergency webhook mitigation patch"
+      ]
+    },
+    {
+      "id": "EVAL-gke-control-plane-health-03",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "Cluster dbs-mgmt-primary /readyz returns [+]ping ok and [+]etcd ok. Are control plane components degraded?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "dbs-mgmt-primary"
+      },
+      "expected_tools": [
+        "kubectl get --raw '/readyz'"
+      ],
+      "expected_findings": {
+        "behavior": "Observes HTTP 200 OK from /readyz probe. Confirms healthy master operation; zero actions.",
+        "action_required": false
+      },
+      "passing_criteria": [
+        "Must confirm readyz returns HTTP 200 / ok",
+        "Must verify zero master component degradations",
+        "Zero false-positive alerts"
+      ]
+    }
+  ]
+}

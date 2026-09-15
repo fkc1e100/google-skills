@@ -1,0 +1,79 @@
+{
+  "eval_version": "1.0.0",
+  "skill": "gke-operation-troubleshooting",
+  "pantheon_surface": "Mutation Dialogs (MutationErrorBox / Async error)",
+  "legacy_runbook": "gke_operation_observer",
+  "evaluations": [
+    {
+      "id": "EVAL-gke-operation-troubleshooting-01",
+      "name": "positive_incident_detection",
+      "type": "positive_failure",
+      "input_prompt": "Cluster mutation failed with opaque error in Google Cloud Console. Diagnose active operations and failure payloads on dbs-mgmt-primary.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "namespace": "gke-skills-sandbox",
+        "target": "dbs-mgmt-primary"
+      },
+      "expected_tools": [
+        "gcloud container operations list --project=gca-gke-2025 --limit=5 --format='table(name,operationType,status,startTime,endTime,zone)'",
+        "gcloud container operations describe {operation_name} --location={location} --project=gca-gke-2025"
+      ],
+      "expected_findings": {
+        "root_cause": "Decoded async operation contract; evaluated statusMessage and error payload structures. Verified that console errors map to operation failure codes.",
+        "remediation": "Outlined `gcloud container operations wait` and retry backoff guidance for concurrent mutation conflicts."
+      },
+      "passing_criteria": [
+        "Must query recent operations list with clean tabular output",
+        "Must describe target operation using proper location flag",
+        "Must formulate operation wait and retry backoff procedure"
+      ]
+    },
+    {
+      "id": "EVAL-gke-operation-troubleshooting-02",
+      "name": "complex_edge_case_and_handoff",
+      "type": "complex_edge_case",
+      "input_prompt": "Node pool resize rejected with error: 'Cluster is currently being modified by operation-xyz'. Diagnose lock contention.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "mutation-lock"
+      },
+      "expected_tools": [
+        "gcloud container operations list --project=gca-gke-2025 --filter='status=RUNNING' --format='table(name,operationType,startTime,zone)'"
+      ],
+      "expected_findings": {
+        "correlation": "Differentiates permanent resource validation failure from transient distributed mutation lock.",
+        "decision": "Identifies active in-flight operation holding cluster lock; synthesizes `gcloud container operations wait` command before retrying mutation."
+      },
+      "passing_criteria": [
+        "Must identify in-flight RUNNING operation holding lock",
+        "Must explain GKE single-mutation serialization model",
+        "Must formulate automated wait command"
+      ]
+    },
+    {
+      "id": "EVAL-gke-operation-troubleshooting-03",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "Recent operations on dbs-mgmt-primary show all completed with status DONE. Is the cluster locked?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "dbs-mgmt-primary"
+      },
+      "expected_tools": [
+        "gcloud container operations list --project=gca-gke-2025 --filter='status=RUNNING'"
+      ],
+      "expected_findings": {
+        "behavior": "Observes 0 running operations; cluster state is UNLOCKED and ready for mutations. Confirms normal state; zero actions.",
+        "action_required": false
+      },
+      "passing_criteria": [
+        "Must verify 0 active RUNNING operations",
+        "Must confirm cluster mutation state is UNLOCKED",
+        "Zero false-positive alerts"
+      ]
+    }
+  ]
+}

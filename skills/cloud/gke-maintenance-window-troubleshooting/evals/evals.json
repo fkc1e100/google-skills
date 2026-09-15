@@ -1,0 +1,78 @@
+{
+  "eval_version": "1.0.0",
+  "skill": "gke-maintenance-window-troubleshooting",
+  "pantheon_surface": "Maintenance Settings (Exclusion window conflict)",
+  "legacy_runbook": "gke_maintenance_window_observer",
+  "evaluations": [
+    {
+      "id": "EVAL-gke-maintenance-window-troubleshooting-01",
+      "name": "positive_incident_detection",
+      "type": "positive_failure",
+      "input_prompt": "GKE auto-upgrade failed to trigger within expected window. Inspect maintenance policy and exclusion windows for dbs-mgmt-primary.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "namespace": "gke-skills-sandbox",
+        "target": "dbs-mgmt-primary"
+      },
+      "expected_tools": [
+        "gcloud container clusters describe dbs-mgmt-primary --zone=asia-southeast1-a --project=gca-gke-2025 --format='yaml(maintenancePolicy)'"
+      ],
+      "expected_findings": {
+        "root_cause": "Verified maintenance window schedule compliance and confirmed absence of conflicting exclusions >32 days.",
+        "remediation": "Provide compliant maintenance window configuration satisfying GKE mandatory upgrade cadence."
+      },
+      "passing_criteria": [
+        "Must retrieve maintenancePolicy yaml from cluster describe",
+        "Must verify exclusion windows comply with 32-day maximum rule",
+        "Must formulate gcloud command updating maintenance window"
+      ]
+    },
+    {
+      "id": "EVAL-gke-maintenance-window-troubleshooting-02",
+      "name": "complex_edge_case_and_handoff",
+      "type": "complex_edge_case",
+      "input_prompt": "Setting maintenance exclusion failed with: 'Exclusion duration cannot exceed 32 days'. Diagnose exclusion parameters.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "black-friday-exclusion"
+      },
+      "expected_tools": [
+        "gcloud container clusters describe dbs-mgmt-primary --zone=asia-southeast1-a --format='yaml(maintenancePolicy.window.maintenanceExclusions)'"
+      ],
+      "expected_findings": {
+        "correlation": "Evaluates GKE release channel policy requiring clusters to accept security and patch upgrades within 32 days.",
+        "decision": "Identifies that requested exclusion spans 45 days; restructures exclusion into compliant window blocks separated by upgrade intervals."
+      },
+      "passing_criteria": [
+        "Must calculate total consecutive exclusion days",
+        "Must explain GKE 32-day platform constraint",
+        "Must synthesize compliant split exclusion windows"
+      ]
+    },
+    {
+      "id": "EVAL-gke-maintenance-window-troubleshooting-03",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "Cluster dbs-mgmt-primary has daily maintenance window 04:00-08:00 UTC and zero active exclusions. Is maintenance configured correctly?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "dbs-mgmt-primary"
+      },
+      "expected_tools": [
+        "gcloud container clusters describe dbs-mgmt-primary --zone=asia-southeast1-a --format='value(maintenancePolicy.window.dailyMaintenanceWindow.startTime)'"
+      ],
+      "expected_findings": {
+        "behavior": "Observes valid recurring window with 4-hour duration meeting GKE minimums. Confirms compliant configuration; zero actions.",
+        "action_required": false
+      },
+      "passing_criteria": [
+        "Must verify maintenance window duration is at least 4 hours",
+        "Must confirm absence of conflicting exclusions",
+        "Zero false-positive alerts"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "eval_version": "1.0.0",
+  "skill": "gke-node-unavailability-troubleshooting",
+  "pantheon_surface": "Node Details (Abrupt transition to NotReady)",
+  "legacy_runbook": "gke_node_unavailability_observer",
+  "evaluations": [
+    {
+      "id": "EVAL-gke-node-unavailability-troubleshooting-01",
+      "name": "positive_incident_detection",
+      "type": "positive_failure",
+      "input_prompt": "Node in cluster dbs-mgmt-primary abruptly transitioned to NotReady. Diagnose NodeLease renewal and API heartbeat.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "namespace": "gke-skills-sandbox",
+        "target": "dbs-mgmt-primary"
+      },
+      "expected_tools": [
+        "kubectl get leases -n kube-node-lease -o wide",
+        "kubectl describe lease -n kube-node-lease {node_name}"
+      ],
+      "expected_findings": {
+        "root_cause": "Confirmed all nodes actively maintaining heartbeats with the Kubernetes API server. Zero node lease expiration or network partitioning detected.",
+        "remediation": "Verified node lease health; outlined network connectivity diagnostics for lease timeout remediation."
+      },
+      "passing_criteria": [
+        "Must inspect NodeLease objects in kube-node-lease namespace",
+        "Must verify renewTime timestamps against current cluster time",
+        "Must explain node controller 40-second lease timeout semantics"
+      ]
+    },
+    {
+      "id": "EVAL-gke-node-unavailability-troubleshooting-02",
+      "name": "complex_edge_case_and_handoff",
+      "type": "complex_edge_case",
+      "input_prompt": "Node gke-spot-pool-node terminated unexpectedly with lease timeout. Check if node was preempted by GCP.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "gke-spot-pool-node"
+      },
+      "expected_tools": [
+        "gcloud compute instances describe {node_name} --zone=asia-southeast1-a --format='yaml(scheduling,status)'",
+        "gcloud compute operations list --filter='targetLink:{node_name}' --limit=5"
+      ],
+      "expected_findings": {
+        "correlation": "Differentiates kernel crash / OS panic from GCE Spot VM reclamation notice or host maintenance event.",
+        "decision": "Identifies GCE compute preemption operation; confirms Spot VM lifecycle expectation and validates replacement node creation."
+      },
+      "passing_criteria": [
+        "Must query GCE instance status and compute operations",
+        "Must recognize Spot VM termination vs ungraceful hardware failure",
+        "Must confirm cluster autoscaler or MIG replacement"
+      ]
+    },
+    {
+      "id": "EVAL-gke-node-unavailability-troubleshooting-03",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "Node leases in kube-node-lease show renewTime within last 5 seconds. Is there node unresponsiveness?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "kube-node-lease"
+      },
+      "expected_tools": [
+        "kubectl get leases -n kube-node-lease"
+      ],
+      "expected_findings": {
+        "behavior": "Observes active renewal on all node leases with zero expired records. Confirms healthy connectivity; zero actions.",
+        "action_required": false
+      },
+      "passing_criteria": [
+        "Must verify all leases are renewed within last 10s",
+        "Must confirm absence of network partition",
+        "Zero false-positive alerts"
+      ]
+    }
+  ]
+}

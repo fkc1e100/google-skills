@@ -1,0 +1,81 @@
+{
+  "eval_version": "1.0.0",
+  "skill": "gke-pod-eviction-troubleshooting",
+  "pantheon_surface": "Workload Status (The node was low on resource)",
+  "legacy_runbook": "gke_pod_eviction_observer",
+  "evaluations": [
+    {
+      "id": "EVAL-gke-pod-eviction-troubleshooting-01",
+      "name": "positive_incident_detection",
+      "type": "positive_failure",
+      "input_prompt": "Pod test-pod-eviction-app was evicted with status Failed. Diagnose volume size limit breach and eviction trigger.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "namespace": "gke-skills-sandbox",
+        "target": "test-pod-eviction-app"
+      },
+      "expected_tools": [
+        "kubectl get pods -n gke-skills-sandbox -l app=test-pod-eviction-app -o wide",
+        "kubectl describe pod -n gke-skills-sandbox test-pod-eviction-app",
+        "kubectl get events -n gke-skills-sandbox --field-selector involvedObject.name=test-pod-eviction-app"
+      ],
+      "expected_findings": {
+        "root_cause": "Pod exceeded local scratch volume quota (emptyDir.sizeLimit: 10Mi) by writing 25Mi to /tmp, triggering Kubelet eviction manager enforcement.",
+        "remediation": "Synthesize declarative manifest adjustments to expand `emptyDir.sizeLimit` or bind to dedicated PersistentVolume."
+      },
+      "passing_criteria": [
+        "Must capture exact Kubelet eviction message and volume sizeLimit reason",
+        "Must distinguish local emptyDir eviction from node DiskPressure",
+        "Must formulate declarative GitOps patch increasing volume sizeLimit"
+      ]
+    },
+    {
+      "id": "EVAL-gke-pod-eviction-troubleshooting-02",
+      "name": "complex_edge_case_and_handoff",
+      "type": "complex_edge_case",
+      "input_prompt": "Multiple pods on node gke-primary-pool-1 were evicted simultaneously. Determine if this was emptyDir breach or node DiskPressure.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "gke-primary-pool-1"
+      },
+      "expected_tools": [
+        "kubectl describe node gke-primary-pool-1 | grep -A 10 Conditions",
+        "kubectl get events -A --field-selector reason=Evicted"
+      ],
+      "expected_findings": {
+        "correlation": "Differentiates single pod volume quota breach from host root filesystem disk watermark threshold breach (>85% disk usage).",
+        "decision": "Identifies node condition `DiskPressure: True`; synthesizes node root filesystem cleanup and node pool disk resize guidance."
+      },
+      "passing_criteria": [
+        "Must inspect node DiskPressure condition",
+        "Must correlate simultaneous multi-pod eviction events",
+        "Must formulate node disk expansion or image garbage collection remedy"
+      ]
+    },
+    {
+      "id": "EVAL-gke-pod-eviction-troubleshooting-03",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "Pod cache-worker has emptyDir volume sizeLimit 100Mi and is using 12Mi. Is it at risk of eviction?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "cache-worker"
+      },
+      "expected_tools": [
+        "kubectl describe pod cache-worker -n gke-skills-sandbox"
+      ],
+      "expected_findings": {
+        "behavior": "Observes usage well within sizeLimit and node DiskPressure False. Confirms normal operation; zero actions.",
+        "action_required": false
+      },
+      "passing_criteria": [
+        "Must compute scratch volume utilization (<20%)",
+        "Must confirm node DiskPressure is False",
+        "Zero false-positive alerts"
+      ]
+    }
+  ]
+}

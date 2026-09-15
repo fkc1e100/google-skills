@@ -1,0 +1,81 @@
+{
+  "eval_version": "1.0.0",
+  "skill": "gke-network-policy-troubleshooting",
+  "pantheon_surface": "Cluster Networking (Dataplane V2 / Calico drops)",
+  "legacy_runbook": "gke_network_policy_observer",
+  "evaluations": [
+    {
+      "id": "EVAL-gke-network-policy-troubleshooting-01",
+      "name": "positive_incident_detection",
+      "type": "positive_failure",
+      "input_prompt": "Pods in gke-skills-sandbox cannot receive ingress traffic. Inspect active NetworkPolicies and GKE Dataplane V2 configuration.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "namespace": "gke-skills-sandbox",
+        "target": "deny-ingress-netpol"
+      },
+      "expected_tools": [
+        "kubectl get netpol -n gke-skills-sandbox deny-ingress-netpol -o wide",
+        "kubectl describe netpol -n gke-skills-sandbox deny-ingress-netpol",
+        "gcloud container clusters describe dbs-mgmt-primary --zone=asia-southeast1-a --project=gca-gke-2025 --format='yaml(networkPolicy,networkConfig)'"
+      ],
+      "expected_findings": {
+        "root_cause": "Default-deny ingress policy matches target pods and silently drops inbound TCP traffic at eBPF layer.",
+        "remediation": "Synthesize declarative NetworkPolicy ingress allow rules targeting specific client pod labels and ports."
+      },
+      "passing_criteria": [
+        "Must identify default-deny Ingress policy specification",
+        "Must verify cluster Dataplane V2 / Cilium datapath provider",
+        "Must generate declarative NetworkPolicy allow rule matching client workload"
+      ]
+    },
+    {
+      "id": "EVAL-gke-network-policy-troubleshooting-02",
+      "name": "complex_edge_case_and_handoff",
+      "type": "complex_edge_case",
+      "input_prompt": "Application pods fail with 'Could not resolve host' after applying strict Egress NetworkPolicy. Diagnose DNS block.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "strict-egress-netpol"
+      },
+      "expected_tools": [
+        "kubectl describe netpol strict-egress-netpol -n gke-skills-sandbox",
+        "kubectl get svc -n kube-system kube-dns"
+      ],
+      "expected_findings": {
+        "correlation": "Differentiates application backend connectivity drops from DNS egress port 53 filtering.",
+        "decision": "Identifies that egress policy omits allow rule for `kube-dns` on port 53 (UDP/TCP); synthesizes DNS egress rule."
+      },
+      "passing_criteria": [
+        "Must inspect egress rule array for port 53 UDP/TCP allow",
+        "Must correlate DNS lookup timeouts with missing egress rule",
+        "Must formulate exact NetworkPolicy patch adding kube-dns egress"
+      ]
+    },
+    {
+      "id": "EVAL-gke-network-policy-troubleshooting-03",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "NetworkPolicy web-allow-80 permits ingress from app=frontend on port 80. Are packets dropped?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "web-allow-80"
+      },
+      "expected_tools": [
+        "kubectl describe netpol web-allow-80 -n gke-skills-sandbox"
+      ],
+      "expected_findings": {
+        "behavior": "Observes explicit ingress allow rule matching client pod selector on port 80. Confirms valid policy; zero actions.",
+        "action_required": false
+      },
+      "passing_criteria": [
+        "Must verify ingress rule matches client selector and target port",
+        "Must confirm policy allows traffic",
+        "Zero false-positive alerts"
+      ]
+    }
+  ]
+}

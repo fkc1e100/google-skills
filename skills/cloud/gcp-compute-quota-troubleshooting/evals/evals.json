@@ -1,0 +1,79 @@
+{
+  "eval_version": "1.0.0",
+  "skill": "gcp-compute-quota-troubleshooting",
+  "pantheon_surface": "Cluster Mutation (parseErrorMessageToQuotaError)",
+  "legacy_runbook": "gcp_compute_quota_observer",
+  "evaluations": [
+    {
+      "id": "EVAL-gcp-compute-quota-troubleshooting-01",
+      "name": "positive_incident_detection",
+      "type": "positive_failure",
+      "input_prompt": "Node pool creation failed with QuotaExceeded error. Inspect regional compute quotas in asia-southeast1 for project gca-gke-2025.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "namespace": "gke-skills-sandbox",
+        "target": "asia-southeast1"
+      },
+      "expected_tools": [
+        "gcloud compute regions describe asia-southeast1 --project=gca-gke-2025 --flatten='quotas[]' --format='table(quotas.metric:label=METRIC,quotas.usage:label=USAGE,quotas.limit:label=LIMIT)' | grep -E '^(METRIC|CPUS|DISKS_TOTAL_GB|IN_USE_ADDRESSES|NVIDIA_L4_GPUS)[[:space:]]'"
+      ],
+      "expected_findings": {
+        "root_cause": "Calculated regional quota consumption and available headroom (>95% capacity available across all critical compute resources). Zero quota saturation.",
+        "remediation": "Format Cloud Quotas API request parameters for automated quota increase requests when scaling beyond regional headroom."
+      },
+      "passing_criteria": [
+        "Must parse regional quota table with exact metric, usage, and limit values",
+        "Must dynamically evaluate quota consumption ratios",
+        "Must synthesize Cloud Quotas increase parameters"
+      ]
+    },
+    {
+      "id": "EVAL-gcp-compute-quota-troubleshooting-02",
+      "name": "complex_edge_case_and_handoff",
+      "type": "complex_edge_case",
+      "input_prompt": "Disk provisioning failed in zone asia-southeast1-a with QuotaExceeded, but regional DISKS_TOTAL_GB shows available headroom. Diagnose.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "asia-southeast1-a"
+      },
+      "expected_tools": [
+        "gcloud compute zones describe asia-southeast1-a --project=gca-gke-2025 --format='yaml(quotas)'",
+        "gcloud compute regions describe asia-southeast1 --project=gca-gke-2025 --format='yaml(quotas)'"
+      ],
+      "expected_findings": {
+        "correlation": "Differentiates regional quota pool from zonal quota pool constraints.",
+        "decision": "Identifies that zonal SSD limit in asia-southeast1-a is saturated despite regional availability; recommends cross-zone rebalancing or zonal quota request."
+      },
+      "passing_criteria": [
+        "Must compare zonal vs regional quota metrics",
+        "Must explain zonal quota boundary to operator",
+        "Must formulate zonal quota request payload"
+      ]
+    },
+    {
+      "id": "EVAL-gcp-compute-quota-troubleshooting-03",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "Compute quotas in region asia-southeast1 have 30 CPUS used out of 3000. Is there an impending quota block?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "asia-southeast1"
+      },
+      "expected_tools": [
+        "gcloud compute regions describe asia-southeast1 --format='value(quotas.metric,quotas.usage,quotas.limit)'"
+      ],
+      "expected_findings": {
+        "behavior": "Calculates 1% CPU utilization, ample disk and address headroom. Confirms robust capacity; zero actions.",
+        "action_required": false
+      },
+      "passing_criteria": [
+        "Must compute quota headroom percentage (>90%)",
+        "Must verify zero quota saturation risk",
+        "Zero false-positive alerts"
+      ]
+    }
+  ]
+}
