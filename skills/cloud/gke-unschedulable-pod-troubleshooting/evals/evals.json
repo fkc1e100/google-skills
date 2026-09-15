@@ -1,0 +1,81 @@
+{
+  "eval_version": "1.0.0",
+  "skill": "gke-unschedulable-pod-troubleshooting",
+  "pantheon_surface": "Workload Modal (POD_UNSCHEDULABLE)",
+  "legacy_runbook": "gke_unschedulable_pod_observer",
+  "evaluations": [
+    {
+      "id": "EVAL-gke-unschedulable-pod-troubleshooting-01",
+      "name": "positive_incident_detection",
+      "type": "positive_failure",
+      "input_prompt": "Pod test-unschedulable-app in gke-skills-sandbox is stuck in Pending. Identify scheduler bottleneck and propose resolution.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "namespace": "gke-skills-sandbox",
+        "target": "test-unschedulable-app"
+      },
+      "expected_tools": [
+        "kubectl get pods -n gke-skills-sandbox -l app=test-unschedulable-app -o wide",
+        "kubectl describe pod -n gke-skills-sandbox test-unschedulable-app",
+        "kubectl get events -n gke-skills-sandbox --field-selector involvedObject.name=test-unschedulable-app"
+      ],
+      "expected_findings": {
+        "root_cause": "Pod requests 500 cores of CPU, which exceeds the total capacity of any single node instance in the cluster.",
+        "remediation": "Identify impossible resource request in deployment manifest; synthesize realistic CPU/memory requests (250m/256Mi)."
+      },
+      "passing_criteria": [
+        "Must capture FailedScheduling event and isolate Insufficient cpu reason",
+        "Must compare pod request against node allocatable capacity",
+        "Must propose right-sized declarative resource requests"
+      ]
+    },
+    {
+      "id": "EVAL-gke-unschedulable-pod-troubleshooting-02",
+      "name": "complex_edge_case_and_handoff",
+      "type": "complex_edge_case",
+      "input_prompt": "Deployment web-server pods are Pending despite nodes having available CPU and memory. Check topology spread and affinity rules.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "web-server"
+      },
+      "expected_tools": [
+        "kubectl get pod -n gke-skills-sandbox -l app=web-server -o yaml",
+        "kubectl get nodes -o wide --show-labels"
+      ],
+      "expected_findings": {
+        "correlation": "Differentiates raw resource exhaustion (CPU/memory) from topology scheduling predicates (`maxSkew`, `topologyKey`, `podAntiAffinity`).",
+        "decision": "Identifies that all available nodes in the target zone already host max allowed replicas under `DoNotSchedule` policy."
+      },
+      "passing_criteria": [
+        "Must evaluate pod topologySpreadConstraints and affinity rules",
+        "Must verify node label distribution across failure domains",
+        "Must recommend adjusting maxSkew or enabling cluster autoscaling"
+      ]
+    },
+    {
+      "id": "EVAL-gke-unschedulable-pod-troubleshooting-03",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "Pod backend-api requesting 100m CPU is Running in production namespace. Is it experiencing scheduling delays?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "backend-api"
+      },
+      "expected_tools": [
+        "kubectl get pod backend-api -n production -o wide"
+      ],
+      "expected_findings": {
+        "behavior": "Observes PodScheduled Condition: True, node assigned, pod phase: Running. Confirms clean scheduling with zero actions.",
+        "action_required": false
+      },
+      "passing_criteria": [
+        "Must verify PodScheduled condition is True",
+        "Must confirm node assignment and clean startup",
+        "Zero false-positive alerts"
+      ]
+    }
+  ]
+}
