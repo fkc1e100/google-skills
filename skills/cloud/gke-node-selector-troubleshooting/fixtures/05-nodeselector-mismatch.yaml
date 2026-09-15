@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-nodeselector-mismatch-app
+  namespace: gke-skills-sandbox
+  labels:
+    app: test-nodeselector-mismatch-app
+    test-fixture: "05-nodeselector-mismatch"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-nodeselector-mismatch-app
+  template:
+    metadata:
+      labels:
+        app: test-nodeselector-mismatch-app
+    spec:
+      nodeSelector:
+        topology.kubernetes.io/zone: asia-southeast1-non-existent-zone-x
+      containers:
+      - name: app-container
+        image: busybox:1.36
+        command: ["sleep", "3600"]
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
