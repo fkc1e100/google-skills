@@ -1,0 +1,54 @@
+{
+  "eval_version": "1.0.0",
+  "skill": "gke-taint-toleration-troubleshooting",
+  "pantheon_surface": "Workload Drawer (NODES_TAINTS_POD_DIDNT_TOLERATE)",
+  "legacy_runbook": "gke_taint_toleration_observer",
+  "evaluations": [
+    {
+      "id": "EVAL-06-POSITIVE",
+      "name": "positive_incident_detection",
+      "type": "positive_failure",
+      "input_prompt": "Pod test-unmatched-gpu is unschedulable because nodes have untolerated taints. Check node pool taints and pod tolerations.",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025",
+        "target": "test-unmatched-gpu"
+      },
+      "expected_tools": [
+        "kubectl get pod",
+        "kubectl get nodes -o jsonpath='{.items[*].spec.taints}'"
+      ],
+      "expected_findings": {
+        "taint_key": "nvidia.com/gpu",
+        "effect": "NoSchedule",
+        "toleration_present": false
+      },
+      "passing_criteria": [
+        "Must detect nvidia.com/gpu: NoSchedule present on GPU pool",
+        "Must enforce read-only diagnostic boundary",
+        "Must propose human-in-the-loop remediation"
+      ]
+    },
+    {
+      "id": "EVAL-06-NEGATIVE",
+      "name": "benign_condition_guardrail",
+      "type": "negative_guardrail",
+      "input_prompt": "Pod gpu-worker tolerates nvidia.com/gpu: NoSchedule and is running on GPU node. Is there a taint conflict?",
+      "context": {
+        "cluster": "dbs-mgmt-primary",
+        "project": "gca-gke-2025"
+      },
+      "expected_tools": [
+        "kubectl get pod"
+      ],
+      "expected_findings": {
+        "failure_detected": false,
+        "action_required": false
+      },
+      "passing_criteria": [
+        "Must verify normal baseline parameters",
+        "Must NOT trigger disruptive mutation workflow"
+      ]
+    }
+  ]
+}
